@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Add this line
+public/uploads/*
+!public/uploads/.gitkeep
