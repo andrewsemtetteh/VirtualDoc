@@ -27,40 +27,9 @@ export default function LoginForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      // Store token
-      localStorage.setItem('token', data.token);
-      
-      // Redirect based on role from response
-      switch (data.user.role) {
-        case 'doctor':
-          router.push('/doctor-dashboard');
-          break;
-        case 'admin':
-          router.push('/admin-dashboard');
-          break;
-        default:
-          router.push('/patient-dashboard');
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    setError('Dashboard functionality is not implemented yet');
+    // Comment out or remove the router.push line
+    // router.push('/dashboard/admin');
   };
 
   return (

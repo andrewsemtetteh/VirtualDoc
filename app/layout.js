@@ -3,6 +3,19 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body 
+        className={inter.className}
+        suppressHydrationWarning={true}
+      >
+        {children}
+      </body>
+    </html>
+  );
+}
+
 export const metadata = {
   title: "Virtual Doc",
   description: "Your trusted telemedicine platform for virtual healthcare",
@@ -10,13 +23,3 @@ export const metadata = {
     icon: '/favicon.png',
   },
 };
-
-export default function RootLayout({ children }) {
-  return (
-    <html lang="en">
-      <body className={inter.className} suppressHydrationWarning={true}>
-        {children}
-      </body>
-    </html>
-  );
-}

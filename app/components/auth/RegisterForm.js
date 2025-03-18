@@ -1,11 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function RegisterForm() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -23,6 +24,7 @@ export default function RegisterForm() {
     gender: '',
     address: '',
     adminCode: '',
+    profilePicture: null
   });
   
   // List of medical specializations
@@ -52,6 +54,15 @@ export default function RegisterForm() {
   ];
   
   const [error, setError] = useState('');
+
+  // Handle hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null; // Return null on server-side
+  }
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -284,42 +295,23 @@ export default function RegisterForm() {
               </div>
               
               {/* User Role Selection */}
-              <div>
+              <div className="mb-6">
                 <label className="block text-gray-700 text-sm font-medium mb-2">I am a</label>
                 <div className="grid grid-cols-3 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, role: 'patient'})}
-                    className={`py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
-                      formData.role === 'patient' 
-                        ? 'bg-green-800 text-white border-green-800' 
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
-                    }`}
-                  >
-                    Patient
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, role: 'doctor'})}
-                    className={`py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
-                      formData.role === 'doctor' 
-                        ? 'bg-green-800 text-white border-green-800' 
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
-                    }`}
-                  >
-                    Doctor
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, role: 'admin'})}
-                    className={`py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
-                      formData.role === 'admin' 
-                        ? 'bg-green-800 text-white border-green-800' 
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
-                    }`}
-                  >
-                    Admin
-                  </button>
+                  {['patient', 'doctor', 'admin'].map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => setFormData({...formData, role})}
+                      className={`py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
+                        formData.role === role 
+                          ? 'bg-green-800 text-white border-green-800' 
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
+                      }`}
+                    >
+                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </button>
+                  ))}
                 </div>
               </div>
               
