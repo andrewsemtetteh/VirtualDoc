@@ -22,8 +22,6 @@ export default function RegisterForm() {
     yearsOfExperience: '',
     dateOfBirth: '',
     gender: '',
-    address: '',
-    adminCode: '',
     profilePicture: null
   });
   
@@ -157,16 +155,6 @@ export default function RegisterForm() {
                 <option value="female">Female</option>
               </select>
             </div>
-            <div className="sm:col-span-2">
-              <label className="block text-gray-700 text-sm font-medium mb-2">Address</label>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm"
-                placeholder="Enter your address"
-              />
-            </div>
           </>
         );
       case 'doctor':
@@ -210,20 +198,6 @@ export default function RegisterForm() {
               />
             </div>
           </>
-        );
-      case 'admin':
-        return (
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2">Admin Access Code</label>
-            <input
-              type="password"
-              required
-              value={formData.adminCode}
-              onChange={(e) => setFormData({...formData, adminCode: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm"
-              placeholder="Enter admin access code"
-            />
-          </div>
         );
       default:
         return null;
@@ -297,8 +271,8 @@ export default function RegisterForm() {
               {/* User Role Selection */}
               <div className="mb-6">
                 <label className="block text-gray-700 text-sm font-medium mb-2">I am a</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {['patient', 'doctor', 'admin'].map((role) => (
+                <div className="grid grid-cols-2 gap-3">
+                  {['patient', 'doctor'].map((role) => (
                     <button
                       key={role}
                       type="button"
@@ -454,7 +428,7 @@ export default function RegisterForm() {
               
               <div className="text-center mt-6">
                 <p className="text-gray-600">
-                  Already have an account? <Link href="/login" className="text-green-700 hover:text-green-800 font-medium">Sign in</Link>
+                  Already have an account? <Link href="/auth/login" className="text-green-700 hover:text-green-800 font-medium">Sign in</Link>
                 </p>
               </div>
             </form>

@@ -29,11 +29,6 @@ export default function Home() {
       step: "4",
       title: "Prescription",
       description: "Receive digital prescriptions if needed"
-    },
-    {
-      step: "5",
-      title: "Payment",
-      description: "Secure and flexible payment options"
     }
   ];
 
@@ -130,7 +125,7 @@ export default function Home() {
                 Connect with expert doctors virtually, get prescriptions, and manage your health - all from the comfort of your home.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Link href="/login">
+                <Link href="/auth/login">
                   <button className="bg-green-800 text-white px-8 py-3 font-semibold text-lg hover:bg-green-700 transition-colors rounded-[30px]">
                     Get Started
                   </button>
@@ -182,7 +177,7 @@ export default function Home() {
               </Slider>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
               {howItWorksData.map((item, index) => (
                 <div key={item.step} className="relative">
                   <div className="bg-white rounded-xl shadow-lg p-6 h-full hover:shadow-xl transition-shadow">
@@ -192,9 +187,9 @@ export default function Home() {
                     <h3 className="text-xl font-semibold mb-3 text-gray-900">{item.title}</h3>
                     <p className="text-gray-600">{item.description}</p>
                   </div>
-                  {index < 4 && (
+                  {index < howItWorksData.length - 1 && (
                     <div className="hidden lg:block absolute top-1/2 -right-4 transform -translate-y-1/2">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>

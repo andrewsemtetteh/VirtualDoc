@@ -35,7 +35,7 @@ export default function Navbar() {
     // Hide the prompt after 2 seconds and redirect
     setTimeout(() => {
       setShowLoginPrompt(false);
-      router.push('/login');
+      router.push('/auth/login');
     }, 2000);
   };
 
@@ -111,7 +111,7 @@ export default function Navbar() {
               <span className="font-medium hover:text-green-400 transition-colors">Contact Us</span>
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-400 group-hover:w-full transition-all duration-300"></span>
             </a>
-            <Link href="/login">
+            <Link href="/auth/login">
               <button className="relative overflow-hidden bg-gradient-to-r from-green-500 to-green-700 text-white px-5 py-2 rounded-full font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-green-500/30 gradient-shift">
                 <span className="relative z-10">Login</span>
                 <span className="absolute inset-0 bg-gradient-to-r from-green-700 to-green-900 opacity-0 hover:opacity-100 transition-opacity duration-300"></span>
@@ -184,7 +184,7 @@ export default function Navbar() {
                 </svg>
                 <span>Contact Us</span>
               </a>
-              <Link href="/login" className="py-2" onClick={() => setIsMenuOpen(false)}>
+              <Link href="/auth/login" className="py-2" onClick={() => setIsMenuOpen(false)}>
                 <button className="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-700 hover:to-green-900 text-white px-5 py-2 rounded-full font-medium w-full transition-all duration-300 flex items-center justify-center space-x-2 gradient-shift">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
