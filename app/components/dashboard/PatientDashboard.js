@@ -29,7 +29,7 @@ export default function PatientDashboard() {
   const [healthTips, setHealthTips] = useState([]);
   const [payments, setPayments] = useState([]);
   const [userProfile, setUserProfile] = useState({
-    fullName: 'John Doe',
+    fullName: 'Joshua Agyeman',
     email: 'john@example.com',
     avatar: null
   });
@@ -73,130 +73,165 @@ export default function PatientDashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Responsive Sidebar/Navbar */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Simplified Navigation Sidebar */}
       <nav className="fixed top-0 left-0 h-full w-20 md:w-64 bg-white shadow-lg z-50 transition-all duration-300 ease-in-out">
         <div className="flex flex-col h-full">
           {/* Logo Area */}
           <div className="p-4 border-b border-gray-200">
             <h1 className="hidden md:block text-xl font-bold text-blue-600">VirtualDoc</h1>
-            <span className="md:hidden text-2xl font-bold text-blue-600">M</span>
+            <span className="md:hidden text-2xl font-bold text-blue-600">VD</span>
           </div>
 
           {/* Navigation Links */}
-          <div className="flex-1 py-6 space-y-2 overflow-y-auto">
-            <NavItem icon={<HomeIcon />} text="Dashboard" href="/dashboard" active />
-            <NavItem icon={<CalendarIcon />} text="Appointments" href="/appointments" />
-            <NavItem icon={<DocumentTextIcon />} text="Records" href="/records" />
-            <NavItem icon={<VideoCameraIcon />} text="Consultations" href="/consultations" />
-            <NavItem icon={<ChatBubbleLeftRightIcon />} text="Messages" href="/messages" />
-          </div>
-
-          {/* User Profile */}
-          <div className="p-4 border-t border-gray-200">
-            <ProfileDropdown user={userProfile} />
+          <div className="flex-1 py-6 space-y-2">
+            <NavItem icon={<CalendarIcon className="w-5 h-5" />} text="Appointments" href="/appointments" />
+            <NavItem icon={<VideoCameraIcon className="w-5 h-5" />} text="Video Consultation" href="/consultation" />
+            <NavItem icon={<DocumentTextIcon className="w-5 h-5" />} text="Medical Records" href="/records" />
+            <NavItem icon={<DocumentArrowDownIcon className="w-5 h-5" />} text="Prescriptions" href="/prescriptions" />
           </div>
         </div>
       </nav>
 
       {/* Main Content Area */}
       <main className="ml-20 md:ml-64 p-4 md:p-8">
-        {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 md:p-8 mb-8 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome back, {userProfile.fullName}!</h1>
-              <p className="text-blue-100">Your health journey continues here</p>
-            </div>
-            <div className="hidden md:block">
-              <QuickAction />
+        {/* Header with Profile */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+          <div className="flex items-center space-x-4">
+            <button className="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
+              <BellIcon className="w-6 h-6 text-gray-600" />
+            </button>
+            <div className="relative">
+              <button className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100">
+                {userProfile.avatar ? (
+                  <img src={userProfile.avatar} alt="" className="w-8 h-8 rounded-full" />
+                ) : (
+                  <UserCircleIcon className="w-8 h-8 text-gray-600" />
+                )}
+                <ChevronDownIcon className="w-4 h-4 text-gray-600" />
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatsCard 
-            title="Next Appointment"
-            value="Today, 2:00 PM"
-            icon={<ClockIcon />}
-            trend="+2 upcoming"
-            color="blue"
-          />
-          <StatsCard 
-            title="Pending Bills"
-            value="$150.00"
-            icon={<BanknotesIcon />}
-            trend="2 invoices"
-            color="red"
-          />
-          <StatsCard 
-            title="Medical Records"
-            value="15"
-            icon={<DocumentTextIcon />}
-            trend="Updated today"
-            color="purple"
-          />
-          <StatsCard 
-            title="Prescriptions"
-            value="3"
-            icon={<DocumentArrowDownIcon />}
-            trend="Active"
-            color="green"
-          />
+        {/* Analytics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <CalendarIcon className="w-6 h-6 text-blue-600" />
+              </div>
+              <span className="text-sm font-medium text-gray-500">Appointments</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold text-gray-800">{appointments.length}</span>
+              <span className="text-sm text-gray-500">Upcoming</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <VideoCameraIcon className="w-6 h-6 text-green-600" />
+              </div>
+              <span className="text-sm font-medium text-gray-500">Consultations</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold text-gray-800">0</span>
+              <span className="text-sm text-gray-500">Scheduled</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <DocumentTextIcon className="w-6 h-6 text-purple-600" />
+              </div>
+              <span className="text-sm font-medium text-gray-500">Medical Records</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold text-gray-800">{medicalHistory.length}</span>
+              <span className="text-sm text-gray-500">Total Records</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <DocumentArrowDownIcon className="w-6 h-6 text-orange-600" />
+              </div>
+              <span className="text-sm font-medium text-gray-500">Prescriptions</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold text-gray-800">{medicalHistory.prescriptions.length}</span>
+              <span className="text-sm text-gray-500">Active</span>
+            </div>
+          </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Appointment Booking Section */}
-            <Card title="Book an Appointment">
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <SearchFilter
-                    filters={searchFilters}
-                    onFilterChange={setSearchFilters}
-                  />
-                </div>
-                <DoctorsList filters={searchFilters} />
-              </div>
-            </Card>
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <button className="flex items-center justify-center space-x-2 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <CalendarIcon className="w-5 h-5" />
+            <span>Book Appointment</span>
+          </button>
+          <button className="flex items-center justify-center space-x-2 p-3 bg-green-600 text-white rounded-lg hover:bg-green-700">
+            <VideoCameraIcon className="w-5 h-5" />
+            <span>Start Consultation</span>
+          </button>
+          <button className="flex items-center justify-center space-x-2 p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+            <DocumentTextIcon className="w-5 h-5" />
+            <span>View Records</span>
+          </button>
+          <button className="flex items-center justify-center space-x-2 p-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+            <DocumentArrowDownIcon className="w-5 h-5" />
+            <span>Download Prescription</span>
+          </button>
+        </div>
 
-            {/* Upcoming Appointments */}
-            <Card
-              title="Upcoming Appointments"
-              action={<button className="btn-primary text-sm">View All</button>}
-            >
-              <AppointmentsList appointments={appointments} />
-            </Card>
+        {/* Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Upcoming Appointments */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">Upcoming Appointments</h2>
+              <Link href="/appointments" className="text-blue-600 hover:text-blue-700 text-sm">
+                View All
+              </Link>
+            </div>
+            <div className="divide-y">
+              {appointments.length === 0 ? (
+                <p className="text-gray-500 py-4">No upcoming appointments</p>
+              ) : (
+                appointments.map((appointment) => (
+                  <div key={appointment.id} className="py-3">
+                    {/* Appointment details */}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
-            {/* Medical Records */}
-            <Card
-              title="Medical Records"
-              action={<button className="btn-secondary text-sm">Upload New</button>}
-            >
-              <MedicalRecordsTabs medicalHistory={medicalHistory} />
-            </Card>
-      </div>
-
-          {/* Side Column */}
-          <div className="space-y-8">
-            {/* Video Consultation */}
-            <Card title="Active Consultation">
-              <VideoConsultation />
-            </Card>
-
-            {/* Payments & Billing */}
-            <Card 
-              title="Payments & Billing"
-              action={<button className="btn-primary text-sm">Pay Now</button>}
-            >
-              <PaymentSummary
-                pendingBills={pendingBills}
-                paymentHistory={paymentHistory}
-              />
-            </Card>
+          {/* Recent Prescriptions */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">Recent Prescriptions</h2>
+              <Link href="/prescriptions" className="text-blue-600 hover:text-blue-700 text-sm">
+                View All
+              </Link>
+            </div>
+            <div className="divide-y">
+              {medicalHistory.prescriptions.length === 0 ? (
+                <p className="text-gray-500 py-4">No recent prescriptions</p>
+              ) : (
+                medicalHistory.prescriptions.map((prescription) => (
+                  <div key={prescription.id} className="py-3">
+                    {/* Prescription details */}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </main>
@@ -214,8 +249,8 @@ const NavItem = ({ icon, text, href, active }) => (
         : 'text-gray-600 hover:bg-gray-50 rounded-xl'
       }`}
   >
-    <div className="w-6 h-6">{icon}</div>
-    <span className="hidden md:block">{text}</span>
+    <div className="w-5 h-5">{icon}</div>
+    <span className="hidden md:block text-sm font-medium">{text}</span>
   </Link>
 );
 

@@ -21,7 +21,7 @@ export default function AdminDashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <button className="p-4 bg-green-600 text-white rounded-lg hover:bg-green-700">
-          Add New User
+          Add New User    
         </button>
         <button className="p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
           Verify Doctors
