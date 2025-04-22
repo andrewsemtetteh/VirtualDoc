@@ -1,0 +1,159 @@
+@import "tailwindcss";
+@import "slick-carousel/slick/slick.css";
+@import "slick-carousel/slick/slick-theme.css";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Animation for notifications */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 0.5s ease-out forwards;
+}
+
+/* Pulse animation for loading indicators */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Hover animations for buttons */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-shift {
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* Floating animation for cards and notifications */
+@keyframes float {
+  0% {
+    transform: translateY(0px) translate(-50%, 0);
+  }
+  50% {
+    transform: translateY(-5px) translate(-50%, 0);
+  }
+  100% {
+    transform: translateY(0px) translate(-50%, 0);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Slick Carousel Custom Styles */
+.slick-slide {
+  padding: 0 5px;
+}
+
+.slick-dots {
+  bottom: -30px;
+}
+
+.slick-dots li button:before {
+  font-size: 10px;
+  color: #4b5563;
+  opacity: 0.5;
+}
+
+.slick-dots li.slick-active button:before {
+  color: #047857;
+  opacity: 1;
+}
+
+.slick-prev:before,
+.slick-next:before {
+  color: #047857;
+}
+
+/* Make sure carousel items are visible */
+.slick-slide > div {
+  height: 100%;
+  display: flex;
+}
+
+.slick-track {
+  display: flex !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.slick-slide {
+  height: inherit !important;
+  display: flex !important;
+}
+
+.slick-slide > div {
+  width: 100%;
+  display: flex;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  .slick-slide {
+    padding: 0 3px;
+  }
+  
+  .slick-dots {
+    bottom: -25px;
+  }
+  
+  .slick-dots li {
+    margin: 0 2px;
+  }
+  
+  .slick-dots li button:before {
+    font-size: 8px;
+  }
+}
