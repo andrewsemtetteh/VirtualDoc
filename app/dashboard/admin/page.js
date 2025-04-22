@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminDashboard() {
+  const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -17,6 +18,19 @@ export default function AdminDashboard() {
   
   const notificationsRef = useRef(null);
   const profileRef = useRef(null);
+
+  useEffect(() => {
+    setMounted(true);
+    const savedTheme = localStorage.getItem('theme');
+    setDarkMode(savedTheme === 'dark');
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+      document.documentElement.classList.toggle('dark', darkMode);
+    }
+  }, [darkMode, mounted]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -77,20 +91,20 @@ export default function AdminDashboard() {
         return (
           <>
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
               {/* Total Appointments */}
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className={`p-4 md:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className="flex items-center">
-                  <div className="bg-green-100 p-3 rounded-full">
-                    <Calendar size={24} className="text-green-500" />
+                  <div className="bg-green-100 p-2 md:p-3 rounded-full">
+                    <Calendar size={20} className="text-green-500" />
                   </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">254</h2>
-                    <p className="text-sm text-gray-500">Total Appointments</p>
+                  <div className="ml-3 md:ml-4">
+                    <h2 className="text-xl md:text-2xl font-bold">254</h2>
+                    <p className="text-xs md:text-sm text-gray-500">Total Appointments</p>
                   </div>
                   <div className="ml-auto text-green-500 flex items-center">
-                    <span>2.5%</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span className="text-xs md:text-sm">2.5%</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                     </svg>
                   </div>
@@ -98,18 +112,18 @@ export default function AdminDashboard() {
               </div>
               
               {/* Total Doctors */}
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className={`p-4 md:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className="flex items-center">
-                  <div className="bg-purple-100 p-3 rounded-full">
-                    <User size={24} className="text-purple-500" />
+                  <div className="bg-purple-100 p-2 md:p-3 rounded-full">
+                    <User size={20} className="text-purple-500" />
                   </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">48</h2>
-                    <p className="text-sm text-gray-500">Total Doctors</p>
+                  <div className="ml-3 md:ml-4">
+                    <h2 className="text-xl md:text-2xl font-bold">48</h2>
+                    <p className="text-xs md:text-sm text-gray-500">Total Doctors</p>
                   </div>
                   <div className="ml-auto text-green-500 flex items-center">
-                    <span>1.2%</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span className="text-xs md:text-sm">1.2%</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                     </svg>
                   </div>
@@ -117,18 +131,18 @@ export default function AdminDashboard() {
               </div>
               
               {/* Total Patients */}
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className={`p-4 md:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className="flex items-center">
-                  <div className="bg-blue-100 p-3 rounded-full">
-                    <Users size={24} className="text-blue-500" />
+                  <div className="bg-blue-100 p-2 md:p-3 rounded-full">
+                    <Users size={20} className="text-blue-500" />
                   </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">1,259</h2>
-                    <p className="text-sm text-gray-500">Total Patients</p>
+                  <div className="ml-3 md:ml-4">
+                    <h2 className="text-xl md:text-2xl font-bold">1,259</h2>
+                    <p className="text-xs md:text-sm text-gray-500">Total Patients</p>
                   </div>
                   <div className="ml-auto text-green-500 flex items-center">
-                    <span>4.6%</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span className="text-xs md:text-sm">4.6%</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                     </svg>
                   </div>
@@ -136,18 +150,18 @@ export default function AdminDashboard() {
               </div>
               
               {/* Total Medical Records */}
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className={`p-4 md:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className="flex items-center">
-                  <div className="bg-green-100 p-3 rounded-full">
-                    <FileText size={24} className="text-green-500" />
+                  <div className="bg-green-100 p-2 md:p-3 rounded-full">
+                    <FileText size={20} className="text-green-500" />
                   </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">3,847</h2>
-                    <p className="text-sm text-gray-500">Medical Records</p>
+                  <div className="ml-3 md:ml-4">
+                    <h2 className="text-xl md:text-2xl font-bold">3,847</h2>
+                    <p className="text-xs md:text-sm text-gray-500">Medical Records</p>
                   </div>
                   <div className="ml-auto text-green-500 flex items-center">
-                    <span>6.2%</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span className="text-xs md:text-sm">6.2%</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                     </svg>
                   </div>
@@ -156,30 +170,30 @@ export default function AdminDashboard() {
             </div>
             
             {/* Recent Activity & Upcoming Appointments */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
               {/* Recent Activity */}
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <h3 className="text-lg font-medium mb-4">Recent Activity</h3>
+              <div className={`p-4 md:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <h3 className="text-base md:text-lg font-medium mb-4">Recent Activity</h3>
                 
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {[1, 2, 3, 4].map((item) => (
-                    <div key={item} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-start`}>
+                    <div key={item} className={`p-3 md:p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-start`}>
                       <div className={`p-2 rounded-full ${['bg-blue-100', 'bg-green-100', 'bg-purple-100', 'bg-orange-100'][item % 4]}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${['text-blue-500', 'text-green-500', 'text-purple-500', 'text-orange-500'][item % 4]}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 md:h-5 md:w-5 ${['text-blue-500', 'text-green-500', 'text-purple-500', 'text-orange-500'][item % 4]}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           {item % 4 === 0 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /> : 
                           item % 4 === 1 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /> :
                           item % 4 === 2 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /> :
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />}
                         </svg>
                       </div>
-                      <div className="ml-4">
-                        <p className="font-medium">
+                      <div className="ml-3 md:ml-4">
+                        <p className="text-sm md:text-base font-medium">
                           {item % 4 === 0 ? "New prescription issued" : 
                            item % 4 === 1 ? "Patient medical record updated" : 
                            item % 4 === 2 ? "Appointment scheduled" : 
                            "New patient registered"}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs md:text-sm text-gray-500">
                           {item % 4 === 0 ? "Dr. Johnson issued a prescription for Patient #12345" : 
                            item % 4 === 1 ? "Medical record for Sarah Williams has been updated" : 
                            item % 4 === 2 ? "Appointment scheduled for James Brown on April 5, 10:30 AM" : 
@@ -195,12 +209,12 @@ export default function AdminDashboard() {
               </div>
               
               {/* Upcoming Appointments */}
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className={`p-4 md:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium">Upcoming Appointments</h3>
+                  <h3 className="text-base md:text-lg font-medium">Upcoming Appointments</h3>
                   <button
                     type="button"
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    className={`px-3 py-1 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${
                       darkMode 
                         ? 'bg-green-700 hover:bg-green-800 text-white' 
                         : 'bg-green-100 text-green-700 hover:bg-green-200'
@@ -210,38 +224,38 @@ export default function AdminDashboard() {
                   </button>
                 </div>
                 
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {[1, 2, 3, 4].map((item) => (
-                    <div key={item} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex justify-between`}>
+                    <div key={item} className={`p-3 md:p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex justify-between`}>
                       <div className="flex items-center">
                         <img 
                           src={`/api/placeholder/${40 + item}/${40 + item}`} 
                           alt="Patient" 
-                          className="w-10 h-10 rounded-full object-cover"
+                          className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
                         />
                         <div className="ml-3">
-                          <p className="font-medium">
+                          <p className="text-sm md:text-base font-medium">
                             {["John Smith", "Emma Johnson", "Michael Brown", "Sarah Davis"][item % 4]}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs md:text-sm text-gray-500">
                             {["General Checkup", "Follow-up", "Consultation", "Prescription Renewal"][item % 4]}
                           </p>
                         </div>
                       </div>
                       <div className="flex flex-col items-end">
                         <div className="flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span className="text-sm">
+                          <span className="text-xs md:text-sm">
                             {["09:00 AM", "10:30 AM", "01:15 PM", "03:45 PM"][item % 4]}
                           </span>
                         </div>
                         <div className="flex items-center mt-1">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <span className="text-sm">
+                          <span className="text-xs md:text-sm">
                             {["Today", "Tomorrow", "Mar 25", "Mar 26"][item % 4]}
                           </span>
                         </div>
@@ -652,12 +666,12 @@ export default function AdminDashboard() {
                     <table className="min-w-full">
                       <thead>
                         <tr className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                          <th className="py-3 text-left">Patient Name</th>
-                          <th className="py-3 text-left">ID</th>
-                          <th className="py-3 text-left">Phone</th>
-                          <th className="py-3 text-left">Last Visit</th>
-                          <th className="py-3 text-left">Status</th>
-                          <th className="py-3 text-left">Actions</th>
+                          <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Patient Name</th>
+                          <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                          <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                          <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Last Visit</th>
+                          <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -699,41 +713,41 @@ export default function AdminDashboard() {
                           },
                         ].map((patient, index) => (
                           <tr key={index} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
-                            <td className="py-4">
+                            <td className="py-4 px-3 md:px-6">
                               <div className="flex items-center">
                                 <img 
                                   src={`/api/placeholder/${40 + index}/${40 + index}`}
                                   alt={patient.name}
-                                  className="w-10 h-10 rounded-full object-cover"
+                                  className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
                                 />
-                                <span className="ml-3 font-medium">{patient.name}</span>
+                                <span className="ml-3 text-sm md:text-base font-medium">{patient.name}</span>
                               </div>
                             </td>
-                            <td className="py-4">{patient.id}</td>
-                            <td className="py-4">{patient.phone}</td>
-                            <td className="py-4">{patient.lastVisit}</td>
-                            <td className="py-4">
+                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.id}</td>
+                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.phone}</td>
+                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.lastVisit}</td>
+                            <td className="py-4 px-3 md:px-6">
                               <span className={`px-2 py-1 rounded text-xs ${
                                 patient.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                               }`}>
                                 {patient.status}
                               </span>
                             </td>
-                            <td className="py-4">
+                            <td className="py-4 px-3 md:px-6">
                               <div className="flex space-x-2">
                                 <button className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                   </svg>
                                 </button>
                                 <button className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                   </svg>
                                 </button>
                                 <button className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                   </svg>
                                 </button>
@@ -746,24 +760,24 @@ export default function AdminDashboard() {
                   </div>
                   
                   {/* Pagination */}
-                  <div className="flex justify-between items-center mt-6">
-                    <div className="text-sm text-gray-500">
+                  <div className="flex flex-col sm:flex-row justify-between items-center mt-4 md:mt-6 space-y-3 sm:space-y-0">
+                    <div className="text-xs md:text-sm text-gray-500">
                       Showing 1 to 5 of 124 patients
                     </div>
                     <div className="flex space-x-1">
-                      <button className={`px-3 py-1 rounded ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
+                      <button className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
                         Previous
                       </button>
-                      <button className={`px-3 py-1 rounded ${darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'}`}>
+                      <button className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'}`}>
                         1
                       </button>
-                      <button className={`px-3 py-1 rounded ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
+                      <button className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
                         2
                       </button>
-                      <button className={`px-3 py-1 rounded ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
+                      <button className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
                         3
                       </button>
-                      <button className={`px-3 py-1 rounded ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
+                      <button className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
                         Next
                       </button>
                     </div>
@@ -1500,7 +1514,7 @@ export default function AdminDashboard() {
   return (
     <div className={`flex h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-green-50 to-gray-100 text-gray-900'} transition-all duration-300`}>
       {/* Sidebar */}
-      <div className={`${collapsed ? 'w-20' : 'w-64'} ${darkMode ? 'bg-gray-800' : 'bg-white'} transition-all duration-300 shadow-lg`}>
+      <div className={`${collapsed ? 'w-20' : 'w-64'} ${darkMode ? 'bg-gray-800' : 'bg-white'} transition-all duration-300 shadow-lg fixed h-full z-50`}>
         {/* Logo */}
         <div className={`flex items-center p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} h-16`}>
           <div className="text-green-700 mr-2">
@@ -1586,9 +1600,9 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`flex-1 flex flex-col overflow-hidden ${collapsed ? 'ml-20' : 'ml-64'}`}>
         {/* Header */}
-        <header className={`flex items-center justify-between px-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm transition-all duration-300 h-16 border-b`}>
+        <header className={`flex items-center justify-between px-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm transition-all duration-300 h-16 border-b sticky top-0 z-40`}>
           <div className="flex items-center">
             <button onClick={toggleSidebar} className={`p-2 rounded-full transition-all duration-300 ${
               darkMode 
@@ -1603,7 +1617,7 @@ export default function AdminDashboard() {
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className="relative">
+            <div className="relative hidden md:block">
               <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'} h-5 w-5 transition-colors duration-300`} />
               <input
                 type="text"
@@ -1624,7 +1638,7 @@ export default function AdminDashboard() {
                   : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
               }`}
             >
-              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+              {mounted && (darkMode ? <Sun size={20} /> : <Moon size={20} />)}
             </button>
             
             <div className="relative" ref={notificationsRef}>
@@ -1717,7 +1731,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* Dynamic Content Area */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {renderContent()}
         </main>
       </div>
