@@ -1,16 +1,14 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function RegisterForm() {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [licenseDocument, setLicenseDocument] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -23,7 +21,8 @@ export default function RegisterForm() {
     yearsOfExperience: '',
     dateOfBirth: '',
     gender: '',
-    profilePicture: null
+    address: '',
+    adminCode: '',
   });
   
   // List of medical specializations
@@ -53,16 +52,6 @@ export default function RegisterForm() {
   ];
   
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
-  // Handle hydration mismatch by only rendering after mount
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return null; // Return null on server-side
-  }
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -76,13 +65,6 @@ export default function RegisterForm() {
     }
   };
 
-  const handleLicenseDocumentChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setLicenseDocument(file);
-    }
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -92,32 +74,6 @@ export default function RegisterForm() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess('');
-    
-    // Validate required fields
-    if (!formData.fullName) {
-      setError('Full name is required');
-      setLoading(false);
-      return;
-    }
-    
-    if (!formData.email) {
-      setError('Email is required');
-      setLoading(false);
-      return;
-    }
-    
-    if (!formData.phoneNumber) {
-      setError('Phone number is required');
-      setLoading(false);
-      return;
-    }
-    
-    if (!formData.password) {
-      setError('Password is required');
-      setLoading(false);
-      return;
-    }
     
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -125,46 +81,17 @@ export default function RegisterForm() {
       return;
     }
 
-    // Doctor-specific validations
-    if (formData.role === 'doctor') {
-      if (!formData.specialization) {
-        setError('Specialization is required');
-        setLoading(false);
-        return;
-      }
-      
-      if (!formData.licenseNumber) {
-        setError('License number is required');
-        setLoading(false);
-        return;
-      }
-      
-      if (!formData.yearsOfExperience) {
-        setError('Years of experience is required');
-        setLoading(false);
-        return;
-      }
-      
-      if (!licenseDocument) {
-        setError('License document is required');
-        setLoading(false);
-        return;
-      }
+    // Validate email and phone number
+    if (!formData.email) {
+      setError('Email is required');
+      setLoading(false);
+      return;
     }
 
-    // Patient-specific validations
-    if (formData.role === 'patient') {
-      if (!formData.dateOfBirth) {
-        setError('Date of birth is required');
-        setLoading(false);
-        return;
-      }
-      
-      if (!formData.gender) {
-        setError('Gender is required');
-        setLoading(false);
-        return;
-      }
+    if (!formData.phoneNumber) {
+      setError('Phone number is required');
+      setLoading(false);
+      return;
     }
 
     try {
@@ -175,9 +102,6 @@ export default function RegisterForm() {
       if (profileImage) {
         formDataToSend.append('profileImage', profileImage);
       }
-      if (licenseDocument) {
-        formDataToSend.append('licenseDocument', licenseDocument);
-      }
 
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -185,17 +109,11 @@ export default function RegisterForm() {
       });
 
       const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Registration failed');
-      }
+      if (!res.ok) throw new Error(data.error);
 
-      setSuccess('Registration successful! Redirecting to login...');
-      setTimeout(() => {
-        router.push('/auth/login?registered=true');
-      }, 2000);
+      router.push('/login?registered=true');
     } catch (err) {
-      setError(err.message || 'An error occurred during registration');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -227,6 +145,16 @@ export default function RegisterForm() {
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-gray-700 text-sm font-medium mb-2">Address</label>
+              <input
+                type="text"
+                value={formData.address}
+                onChange={(e) => setFormData({...formData, address: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm"
+                placeholder="Enter your address"
+              />
             </div>
           </>
         );
@@ -270,21 +198,21 @@ export default function RegisterForm() {
                 placeholder="Years of experience"
               />
             </div>
-            <div>
-              <label className="block text-gray-700 text-sm font-medium mb-2">Upload License Document</label>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleLicenseDocumentChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm"
-                />
-                {licenseDocument && (
-                  <p className="mt-2 text-sm text-green-600">Document selected: {licenseDocument.name}</p>
-                )}
-              </div>
-            </div>
           </>
+        );
+      case 'admin':
+        return (
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-2">Admin Access Code</label>
+            <input
+              type="password"
+              required
+              value={formData.adminCode}
+              onChange={(e) => setFormData({...formData, adminCode: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm"
+              placeholder="Enter admin access code"
+            />
+          </div>
         );
       default:
         return null;
@@ -314,17 +242,6 @@ export default function RegisterForm() {
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                   {error}
-                </div>
-              </div>
-            )}
-
-            {success && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  {success}
                 </div>
               </div>
             )}
@@ -367,23 +284,42 @@ export default function RegisterForm() {
               </div>
               
               {/* User Role Selection */}
-              <div className="mb-6">
+              <div>
                 <label className="block text-gray-700 text-sm font-medium mb-2">I am a</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {['patient', 'doctor'].map((role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => setFormData({...formData, role})}
-                      className={`py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
-                        formData.role === role 
-                          ? 'bg-green-800 text-white border-green-800' 
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
-                      }`}
-                    >
-                      {role.charAt(0).toUpperCase() + role.slice(1)}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, role: 'patient'})}
+                    className={`py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
+                      formData.role === 'patient' 
+                        ? 'bg-green-800 text-white border-green-800' 
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
+                    }`}
+                  >
+                    Patient
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, role: 'doctor'})}
+                    className={`py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
+                      formData.role === 'doctor' 
+                        ? 'bg-green-800 text-white border-green-800' 
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
+                    }`}
+                  >
+                    Doctor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, role: 'admin'})}
+                    className={`py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
+                      formData.role === 'admin' 
+                        ? 'bg-green-800 text-white border-green-800' 
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
+                    }`}
+                  >
+                    Admin
+                  </button>
                 </div>
               </div>
               
@@ -526,7 +462,7 @@ export default function RegisterForm() {
               
               <div className="text-center mt-6">
                 <p className="text-gray-600">
-                  Already have an account? <Link href="/auth/login" className="text-green-700 hover:text-green-800 font-medium">Sign in</Link>
+                  Already have an account? <Link href="/login" className="text-green-700 hover:text-green-800 font-medium">Sign in</Link>
                 </p>
               </div>
             </form>

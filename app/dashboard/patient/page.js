@@ -48,210 +48,148 @@ export default function PatientDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-green-800 to-green-700 rounded-2xl p-6 md:p-8 text-white">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+      <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome back, Joshua!</h1>
-            <p className="text-green-100">Your health journey continues here</p>
+            <h1 className="text-2xl font-bold">Welcome back, John!</h1>
+            <p className="text-gray-600">Here's what's happening with your health today.</p>
           </div>
-          <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
-            <Link 
-              href="/dashboard/patient/appointments"
-              className="inline-flex items-center px-4 py-2 bg-white text-green-800 rounded-lg hover:bg-green-50 transition-colors"
-            >
-              <CalendarIcon className="w-5 h-5 mr-2" />
+          <div className="flex items-center gap-2">
+            <button className="px-4 py-2 bg-green-800 text-white rounded-lg hover:bg-green-700 transition-colors">
               Book Appointment
-            </Link>
-            <Link 
-              href="/dashboard/patient/video-consultation"
-              className="inline-flex items-center px-4 py-2 bg-white text-green-800 rounded-lg hover:bg-green-50 transition-colors"
-            >
-              <VideoCameraIcon className="w-5 h-5 mr-2" />
-              Join Video Call
-            </Link>
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Patient Info Section */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 pt-4 border-t border-green-600">
-          <div className="bg-white/10 rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <IdentificationIcon className="w-6 h-6 text-white" />
-              <div>
-                <p className="text-sm text-green-100">Patient ID</p>
-                <p className="text-lg font-semibold text-white">{patientInfo.id}</p>
-              </div>
+      {/* Patient Info Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+          <h2 className="text-lg font-semibold mb-4">Personal Information</h2>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="text-gray-600">Name:</span>
+              <span className="font-medium">John Doe</span>
             </div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <UserCircleIcon className="w-6 h-6 text-white" />
-              <div>
-                <p className="text-sm text-green-100">Age</p>
-                <p className="text-lg font-semibold text-white">{patientInfo.age} years</p>
-              </div>
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="text-gray-600">Date of Birth:</span>
+              <span className="font-medium">January 1, 1980</span>
             </div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <DocumentTextIcon className="w-6 h-6 text-white" />
-              <div>
-                <p className="text-sm text-green-100">Blood Type</p>
-                <p className="text-lg font-semibold text-white">{patientInfo.bloodType}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <CalendarIcon className="w-6 h-6 text-white" />
-              <div>
-                <p className="text-sm text-green-100">Next Meeting</p>
-                <p className="text-lg font-semibold text-white">{patientInfo.nextAppointment}</p>
-              </div>
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="text-gray-600">Gender:</span>
+              <span className="font-medium">Male</span>
             </div>
           </div>
         </div>
 
-        {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-green-600">
-          <div className="bg-white/10 rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <CalendarIcon className="w-6 h-6 text-white" />
-              <div>
-                <p className="text-sm text-green-100">Appointments</p>
-                <p className="text-xl font-bold text-white">2</p>
-              </div>
+        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+          <h2 className="text-lg font-semibold mb-4">Contact Information</h2>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="text-gray-600">Email:</span>
+              <span className="font-medium">john.doe@example.com</span>
             </div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <VideoCameraIcon className="w-6 h-6 text-white" />
-              <div>
-                <p className="text-sm text-green-100">Consultations</p>
-                <p className="text-xl font-bold text-white">2</p>
-              </div>
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="text-gray-600">Phone:</span>
+              <span className="font-medium">(555) 123-4567</span>
             </div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <DocumentTextIcon className="w-6 h-6 text-white" />
-              <div>
-                <p className="text-sm text-green-100">Medical Records</p>
-                <p className="text-xl font-bold text-white">5</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <DocumentArrowDownIcon className="w-6 h-6 text-white" />
-              <div>
-                <p className="text-sm text-green-100">Prescriptions</p>
-                <p className="text-xl font-bold text-white">3</p>
-              </div>
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="text-gray-600">Address:</span>
+              <span className="font-medium">123 Main St, City, State</span>
             </div>
           </div>
         </div>
 
-        {/* Member Status */}
-        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-green-600">
-          <span className="inline-flex items-center text-sm text-green-100">
-            <ClockIcon className="w-4 h-4 mr-1" />
-            Member since 2024
-          </span>
-          <span className="inline-flex items-center text-sm text-green-100">
-            <CheckCircleIcon className="w-4 h-4 mr-1" />
-            Active Patient
-          </span>
+        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+          <h2 className="text-lg font-semibold mb-4">Insurance Information</h2>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="text-gray-600">Provider:</span>
+              <span className="font-medium">Blue Cross Blue Shield</span>
+            </div>
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="text-gray-600">Policy Number:</span>
+              <span className="font-medium">BCBS123456789</span>
+            </div>
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="text-gray-600">Group Number:</span>
+              <span className="font-medium">GRP123456</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+          <div className="flex flex-col">
+            <span className="text-gray-600">Upcoming Appointments</span>
+            <span className="text-2xl font-bold">2</span>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+          <div className="flex flex-col">
+            <span className="text-gray-600">Pending Prescriptions</span>
+            <span className="text-2xl font-bold">1</span>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+          <div className="flex flex-col">
+            <span className="text-gray-600">Recent Lab Results</span>
+            <span className="text-2xl font-bold">3</span>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+          <div className="flex flex-col">
+            <span className="text-gray-600">Messages</span>
+            <span className="text-2xl font-bold">5</span>
+          </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link href="/dashboard/patient/appointments" 
-          className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-all group">
-          <CalendarIcon className="w-8 h-8 text-green-700 mb-3 group-hover:scale-110 transition-transform" />
-          <h3 className="font-semibold text-gray-800">Schedule Appointment</h3>
-          <p className="text-sm text-gray-500 mt-1">Book your next visit</p>
-        </Link>
-        <Link href="/dashboard/patient/video-consultation"
-          className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-all group">
-          <VideoCameraIcon className="w-8 h-8 text-green-700 mb-3 group-hover:scale-110 transition-transform" />
-          <h3 className="font-semibold text-gray-800">Video Consultation</h3>
-          <p className="text-sm text-gray-500 mt-1">Connect with your doctor</p>
-        </Link>
-        <Link href="/dashboard/patient/medical-records"
-          className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-all group">
-          <DocumentTextIcon className="w-8 h-8 text-green-700 mb-3 group-hover:scale-110 transition-transform" />
-          <h3 className="font-semibold text-gray-800">Medical Records</h3>
-          <p className="text-sm text-gray-500 mt-1">View your health history</p>
-        </Link>
-        <Link href="/dashboard/patient/prescriptions"
-          className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-all group">
-          <DocumentArrowDownIcon className="w-8 h-8 text-green-700 mb-3 group-hover:scale-110 transition-transform" />
-          <h3 className="font-semibold text-gray-800">Prescriptions</h3>
-          <p className="text-sm text-gray-500 mt-1">Access your medications</p>
-        </Link>
+      <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+        <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <button className="flex items-center justify-center gap-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <span>Book Appointment</span>
+          </button>
+          <button className="flex items-center justify-center gap-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <span>View Medical Records</span>
+          </button>
+          <button className="flex items-center justify-center gap-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <span>Request Prescription</span>
+          </button>
+          <button className="flex items-center justify-center gap-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <span>Message Doctor</span>
+          </button>
+        </div>
       </div>
 
       {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upcoming Appointments */}
-        <div className="bg-white rounded-xl shadow-sm">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">Upcoming Appointments</h2>
-              <Link href="/dashboard/patient/appointments" className="text-green-800 hover:text-green-700 text-sm font-medium">
-                View All
-              </Link>
+      <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+        <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border border-gray-200 rounded-lg">
+            <div>
+              <h3 className="font-medium">Appointment with Dr. Smith</h3>
+              <p className="text-gray-600">Cardiology Consultation</p>
             </div>
+            <span className="text-sm text-gray-500">2 days ago</span>
           </div>
-          <div className="p-6 space-y-4">
-            {appointments.map((appointment) => (
-              <div key={appointment.id} className="bg-green-50 rounded-lg p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium text-gray-900">Dr. {appointment.doctorName}</h3>
-                    <p className="text-sm text-gray-600">{appointment.specialty}</p>
-                    <p className="text-sm text-gray-600">{appointment.date} at {appointment.time}</p>
-                    <span className="inline-block px-2 py-1 mt-2 text-xs rounded-full bg-green-100 text-green-800">
-                      Video Consultation
-                    </span>
-                  </div>
-                  <span className="px-3 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                    {appointment.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Prescriptions */}
-        <div className="bg-white rounded-xl shadow-sm">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">Recent Prescriptions</h2>
-              <Link href="/dashboard/patient/prescriptions" className="text-green-800 hover:text-green-700 text-sm font-medium">
-                View All
-              </Link>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border border-gray-200 rounded-lg">
+            <div>
+              <h3 className="font-medium">Lab Results Received</h3>
+              <p className="text-gray-600">Blood Test Results</p>
             </div>
+            <span className="text-sm text-gray-500">5 days ago</span>
           </div>
-          <div className="p-6 space-y-4">
-            {appointments.map((appointment) => (
-              <div key={appointment.id} className="bg-green-50 rounded-lg p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium text-gray-900">General Medication</h3>
-                    <p className="text-sm text-gray-600">Prescribed by Dr. {appointment.doctorName}</p>
-                    <p className="text-sm text-gray-600">{appointment.date}</p>
-                  </div>
-                  <button className="flex items-center space-x-2 px-3 py-2 bg-green-800 text-white rounded-lg hover:bg-green-700 transition-colors">
-                    <ArrowDownTrayIcon className="w-4 h-4" />
-                    <span className="text-sm">Download</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border border-gray-200 rounded-lg">
+            <div>
+              <h3 className="font-medium">Prescription Refill</h3>
+              <p className="text-gray-600">Medication X</p>
+            </div>
+            <span className="text-sm text-gray-500">1 week ago</span>
           </div>
         </div>
       </div>

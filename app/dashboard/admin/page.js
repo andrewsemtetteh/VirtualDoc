@@ -1,16 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   BarChart, Users, Calendar, FileText, 
   Menu, X, Search, Bell, Sun, Moon,
-  ChevronDown, LayoutDashboard, ShoppingCart, User, Settings
+  ChevronDown, LayoutDashboard, ShoppingCart, User, Settings,
+  LogOut
 } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  
+  const notificationsRef = useRef(null);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setIsNotificationsOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const notifications = [
+    {
+      title: "Appointment Reminder",
+      message: "Your appointment with Dr. Smith is tomorrow at 2:00 PM",
+      time: "2 hours ago"
+    },
+    {
+      title: "New Prescription",
+      message: "Dr. Davis has uploaded a new prescription",
+      time: "1 day ago"
+    }
+  ];
 
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
@@ -18,6 +53,16 @@ export default function AdminDashboard() {
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+  };
+
+  const toggleProfile = () => {
+    setIsProfileOpen(!isProfileOpen);
+    if (isNotificationsOpen) setIsNotificationsOpen(false);
+  };
+
+  const toggleNotifications = () => {
+    setIsNotificationsOpen(!isNotificationsOpen);
+    if (isProfileOpen) setIsProfileOpen(false);
   };
 
   // Navigation handler
@@ -45,27 +90,6 @@ export default function AdminDashboard() {
                   </div>
                   <div className="ml-auto text-green-500 flex items-center">
                     <span>2.5%</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Total Revenue */}
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center">
-                  <div className="bg-orange-100 p-3 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">$24.5K</h2>
-                    <p className="text-sm text-gray-500">Total Revenue</p>
-                  </div>
-                  <div className="ml-auto text-green-500 flex items-center">
-                    <span>4.35%</span>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                     </svg>
@@ -102,92 +126,30 @@ export default function AdminDashboard() {
                     <h2 className="text-2xl font-bold">1,259</h2>
                     <p className="text-sm text-gray-500">Total Patients</p>
                   </div>
-                  <div className="ml-auto text-red-500 flex items-center">
-                    <span>-0.58%</span>
+                  <div className="ml-auto text-green-500 flex items-center">
+                    <span>4.6%</span>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Appointments Overview */}
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-medium">Appointments Overview</h3>
-                  <select className={`p-2 rounded border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
-                    <option>Monthly</option>
-                    <option>Weekly</option>
-                    <option>Daily</option>
-                  </select>
-                </div>
-                
-                {/* Placeholder for chart */}
-                <div className="bg-gray-200 dark:bg-gray-700 h-64 rounded-lg relative">
-                  {/* Sample chart elements */}
-                  <div className="absolute bottom-0 left-0 w-full h-32 flex items-end px-6">
-                    <div className="w-1/7 h-40 bg-blue-500 opacity-70 rounded-t-lg mx-1"></div>
-                    <div className="w-1/7 h-28 bg-blue-500 opacity-70 rounded-t-lg mx-1"></div>
-                    <div className="w-1/7 h-52 bg-blue-500 opacity-70 rounded-t-lg mx-1"></div>
-                    <div className="w-1/7 h-36 bg-blue-500 opacity-70 rounded-t-lg mx-1"></div>
-                    <div className="w-1/7 h-64 bg-blue-500 opacity-70 rounded-t-lg mx-1"></div>
-                    <div className="w-1/7 h-48 bg-blue-500 opacity-70 rounded-t-lg mx-1"></div>
-                    <div className="w-1/7 h-56 bg-blue-500 opacity-70 rounded-t-lg mx-1"></div>
-                  </div>
-                  
-                  {/* Chart overlay - blue line */}
-                  <div className="absolute bottom-0 left-0 w-full h-32 px-6">
-                    <svg width="100%" height="100%" viewBox="0 0 400 150" preserveAspectRatio="none">
-                      <path 
-                        d="M0,100 C50,80 100,120 150,90 C200,60 250,110 300,70 C350,30 400,50 400,30" 
-                        fill="none" 
-                        stroke="#3B82F6" 
-                        strokeWidth="3"
-                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                     </svg>
                   </div>
                 </div>
               </div>
               
-              {/* Revenue Breakdown */}
+              {/* Total Medical Records */}
               <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-medium">Revenue this week</h3>
-                  <select className={`p-2 rounded border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
-                    <option>This Week</option>
-                    <option>Last Week</option>
-                    <option>This Month</option>
-                  </select>
-                </div>
-                
-                {/* Placeholder for chart */}
-                <div className="h-64 flex items-end space-x-4">
-                  {/* Revenue chart columns */}
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
-                    <div key={day} className="flex-1 flex flex-col items-center">
-                      <div className="w-full flex flex-col space-y-1">
-                        <div className="flex flex-col h-48 justify-end">
-                          <div className={`bg-purple-500 h-${24 + index * 4} w-full rounded-t-lg`}></div>
-                          <div className={`bg-blue-400 h-${8 - index} w-full`}></div>
-                        </div>
-                        <div className="text-center text-sm">{day}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Legend */}
-                <div className="flex justify-center space-x-6 mt-4">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                    <span className="ml-2 text-sm">Consultations</span>
+                <div className="flex items-center">
+                  <div className="bg-green-100 p-3 rounded-full">
+                    <FileText size={24} className="text-green-500" />
                   </div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
-                    <span className="ml-2 text-sm">Prescriptions</span>
+                  <div className="ml-4">
+                    <h2 className="text-2xl font-bold">3,847</h2>
+                    <p className="text-sm text-gray-500">Medical Records</p>
+                  </div>
+                  <div className="ml-auto text-green-500 flex items-center">
+                    <span>6.2%</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
                   </div>
                 </div>
               </div>
@@ -236,7 +198,16 @@ export default function AdminDashboard() {
               <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">Upcoming Appointments</h3>
-                  <button className="text-blue-500 text-sm">View All</button>
+                  <button
+                    type="button"
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      darkMode 
+                        ? 'bg-green-700 hover:bg-green-800 text-white' 
+                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                    }`}
+                  >
+                    View All
+                  </button>
                 </div>
                 
                 <div className="space-y-4">
@@ -416,7 +387,16 @@ export default function AdminDashboard() {
                 <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium">Recent Appointments</h3>
-                    <button className="text-blue-500 text-sm">View All</button>
+                    <button
+                      type="button"
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        darkMode 
+                          ? 'bg-green-700 hover:bg-green-800 text-white' 
+                          : 'bg-green-100 text-green-700 hover:bg-green-200'
+                      }`}
+                    >
+                      View All
+                    </button>
                   </div>
                   
                   <div className="space-y-4">
@@ -602,7 +582,16 @@ export default function AdminDashboard() {
                   <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-medium">Recently Registered Patients</h3>
-                      <button className="text-blue-500 text-sm">View All</button>
+                      <button
+                        type="button"
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                          darkMode 
+                            ? 'bg-green-700 hover:bg-green-800 text-white' 
+                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        }`}
+                      >
+                        View All
+                      </button>
                     </div>
                     
                     <div className="space-y-4">
@@ -954,33 +943,56 @@ export default function AdminDashboard() {
                   </div>
                   
                   {/* Doctor List */}
-                  <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                  <div className={`p-6 rounded-lg ${
+                    darkMode 
+                      ? 'bg-gray-800 shadow-md' 
+                      : 'bg-white shadow-md border border-gray-100 hover:shadow-lg'
+                  } transition-all duration-300`}>
                     <div className="flex justify-between items-center mb-6">
                       <h3 className="text-lg font-medium">Doctor Directory</h3>
                       <div className="flex space-x-2">
                         <input 
                           type="text" 
                           placeholder="Search doctors..." 
-                          className={`p-2 rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-200'}`}
+                          className={`p-2 rounded border transition-all duration-300 ${
+                            darkMode 
+                              ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                              : 'bg-white border-gray-200 placeholder-gray-500'
+                          }`}
                         />
-                        <button className="bg-blue-500 text-white px-4 py-2 rounded">Add Doctor</button>
+                        <button
+                          type="button"
+                          className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                            darkMode 
+                              ? 'bg-green-700 hover:bg-green-800 text-white' 
+                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          }`}
+                        >
+                          Add New
+                        </button>
                       </div>
                     </div>
                     
-                    {/* Doctor List Table */}
+                    {/* Table */}
                     <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialty</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patients</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <table className={`min-w-full transition-all duration-300 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-900'
+                      }`}>
+                        <thead>
+                          <tr className={`border-b transition-all duration-300 ${
+                            darkMode ? 'border-gray-700' : 'border-gray-200'
+                          }`}>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialty</th>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patients</th>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y divide-gray-200 dark:divide-gray-700`}>
+                        <tbody className={`divide-y transition-all duration-300 ${
+                          darkMode ? 'divide-gray-700' : 'divide-gray-200'
+                        }`}>
                           {[
                             { name: 'Dr. Sarah Johnson', specialty: 'Cardiology', status: 'Active', patients: 48, rating: 4.8 },
                             { name: 'Dr. Michael Chen', specialty: 'Neurology', status: 'Active', patients: 52, rating: 4.7 },
@@ -988,7 +1000,11 @@ export default function AdminDashboard() {
                             { name: 'Dr. David Kim', specialty: 'Orthopedics', status: 'Active', patients: 41, rating: 4.6 },
                             { name: 'Dr. Jessica Martinez', specialty: 'General Medicine', status: 'Active', patients: 65, rating: 4.5 }
                           ].map((doctor, index) => (
-                            <tr key={index} className={index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-700' : ''}>
+                            <tr key={index} className={`transition-all duration-300 ${
+                              darkMode 
+                                ? index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'
+                                : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                            }`}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
                                   <img 
@@ -998,7 +1014,9 @@ export default function AdminDashboard() {
                                   />
                                   <div className="ml-4">
                                     <div className="font-medium">{doctor.name}</div>
-                                    <div className="text-sm text-gray-500">doctor{index + 1}@virtualdoc.com</div>
+                                    <div className={`text-sm ${
+                                      darkMode ? 'text-gray-400' : 'text-gray-500'
+                                    }`}>doctor{index + 1}@virtualdoc.com</div>
                                   </div>
                                 </div>
                               </td>
@@ -1007,7 +1025,9 @@ export default function AdminDashboard() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  doctor.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                  doctor.status === 'Active' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-yellow-100 text-yellow-800'
                                 }`}>
                                   {doctor.status}
                                 </span>
@@ -1020,7 +1040,9 @@ export default function AdminDashboard() {
                                   <span className="text-sm mr-2">{doctor.rating}</span>
                                   <div className="flex">
                                     {[...Array(5)].map((_, i) => (
-                                      <svg key={i} className={`w-4 h-4 ${i < Math.floor(doctor.rating) ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                                      <svg key={i} className={`w-4 h-4 ${
+                                        i < Math.floor(doctor.rating) ? 'text-yellow-400' : 'text-gray-300'
+                                      }`} fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                       </svg>
                                     ))}
@@ -1028,8 +1050,25 @@ export default function AdminDashboard() {
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button className="text-blue-500 hover:text-blue-700 mr-3">Edit</button>
-                                <button className="text-gray-500 hover:text-gray-700">View</button>
+                                <div className="flex space-x-2">
+                                  <button
+                                    type="button"
+                                    className={`px-3 py-1 rounded-lg font-medium transition-all duration-300 ${
+                                      darkMode 
+                                        ? 'bg-green-700 hover:bg-green-800 text-white' 
+                                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                    }`}
+                                  >
+                                    Update
+                                  </button>
+                                  <button className={`px-3 py-1 rounded-lg transition-all duration-300 ${
+                                    darkMode 
+                                      ? 'text-gray-300 hover:bg-gray-700' 
+                                      : 'text-gray-600 hover:bg-gray-100'
+                                  }`}>
+                                    View
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -1037,40 +1076,51 @@ export default function AdminDashboard() {
                       </table>
                       
                       {/* Pagination */}
-                      <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6">
+                      <div className={`flex items-center justify-between border-t px-4 py-3 sm:px-6 transition-all duration-300 ${
+                        darkMode ? 'border-gray-700' : 'border-gray-200'
+                      }`}>
                         <div className="flex-1 flex justify-between sm:hidden">
-                          <button className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${darkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-white text-gray-700'}`}>
+                          <button className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md transition-all duration-300 ${
+                            darkMode 
+                              ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600' 
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}>
                             Previous
                           </button>
-                          <button className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${darkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-white text-gray-700'}`}>
+                          <button className={`ml-3 relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md transition-all duration-300 ${
+                            darkMode 
+                              ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600' 
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}>
                             Next
                           </button>
                         </div>
                         <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                           <div>
-                            <p className="text-sm text-gray-500">
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>
                               Showing <span className="font-medium">1</span> to <span className="font-medium">5</span> of <span className="font-medium">48</span> doctors
                             </p>
                           </div>
                           <div>
                             <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                              <button className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 text-sm font-medium ${darkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-white text-gray-500'}`}>
-                                <span className="sr-only">Previous</span>
-                                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                  <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </button>
-                              <button className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${darkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-50 text-blue-600 border-blue-500'}`}>1</button>
-                              <button className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${darkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-white text-gray-500'}`}>2</button>
-                              <button className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${darkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-white text-gray-500'}`}>3</button>
-                              <button className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${darkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-white text-gray-500'}`}>4</button>
-                              <button className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${darkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-white text-gray-500'}`}>5</button>
-                              <button className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 text-sm font-medium ${darkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-white text-gray-500'}`}>
-                                <span className="sr-only">Next</span>
-                                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </button>
+                              {['Previous', '1', '2', '3', '4', '5', 'Next'].map((page, index) => (
+                                <button
+                                  key={page}
+                                  className={`relative inline-flex items-center px-3 py-2 border text-sm font-medium transition-all duration-300 ${
+                                    darkMode
+                                      ? index === 1 
+                                        ? 'bg-gray-600 text-white border-gray-500' 
+                                        : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                                      : index === 1
+                                        ? 'bg-blue-50 text-blue-600 border-blue-500'
+                                        : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
+                                  } ${
+                                    index === 0 ? 'rounded-l-md' : index === 6 ? 'rounded-r-md' : ''
+                                  }`}
+                                >
+                                  {page}
+                                </button>
+                              ))}
                             </nav>
                           </div>
                         </div>
@@ -1218,7 +1268,16 @@ export default function AdminDashboard() {
                       <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                         <div className="flex justify-between items-center mb-4">
                           <h3 className="text-lg font-medium">Recently Updated Records</h3>
-                          <button className="text-blue-500 text-sm">View All</button>
+                          <button
+                            type="button"
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                              darkMode 
+                                ? 'bg-green-700 hover:bg-green-800 text-white' 
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            }`}
+                          >
+                            View All
+                          </button>
                         </div>
                         
                         <div className="space-y-4">
@@ -1439,18 +1498,18 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className={`flex h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
+    <div className={`flex h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-green-50 to-gray-100 text-gray-900'} transition-all duration-300`}>
       {/* Sidebar */}
       <div className={`${collapsed ? 'w-20' : 'w-64'} ${darkMode ? 'bg-gray-800' : 'bg-white'} transition-all duration-300 shadow-lg`}>
         {/* Logo */}
-        <div className="flex items-center p-4 border-b">
-          <div className="text-blue-600 mr-2">
+        <div className={`flex items-center p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} h-16`}>
+          <div className="text-green-700 mr-2">
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="18" cy="18" r="18" fill="currentColor" fillOpacity="0.2" />
               <path d="M11 18C11 14.134 14.134 11 18 11V25C14.134 25 11 21.866 11 18Z" fill="currentColor" />
             </svg>
           </div>
-          {!collapsed && <span className="text-xl font-bold">VirtualDoc</span>}
+          {!collapsed && <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-800">VirtualDoc</span>}
         </div>
 
         {/* Menu */}
@@ -1463,13 +1522,12 @@ export default function AdminDashboard() {
               onClick={() => handleNavigation('dashboard')}
               className={`flex items-center p-3 rounded-lg cursor-pointer ${
                 activeSection === 'dashboard' 
-                  ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
+                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
+                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
               }`}
             >
               <LayoutDashboard size={20} />
               {!collapsed && <span className="ml-3 font-medium">Dashboard</span>}
-              {!collapsed && <ChevronDown size={16} className="ml-auto" />}
             </div>
             
             {/* Appointments */}
@@ -1477,8 +1535,8 @@ export default function AdminDashboard() {
               onClick={() => handleNavigation('appointments')}
               className={`flex items-center p-3 rounded-lg cursor-pointer ${
                 activeSection === 'appointments' 
-                  ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
+                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
+                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
               }`}
             >
               <Calendar size={20} />
@@ -1490,8 +1548,8 @@ export default function AdminDashboard() {
               onClick={() => handleNavigation('patients')}
               className={`flex items-center p-3 rounded-lg cursor-pointer ${
                 activeSection === 'patients' 
-                  ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
+                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
+                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
               }`}
             >
               <Users size={20} />
@@ -1503,8 +1561,8 @@ export default function AdminDashboard() {
               onClick={() => handleNavigation('doctors')}
               className={`flex items-center p-3 rounded-lg cursor-pointer ${
                 activeSection === 'doctors' 
-                  ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
+                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
+                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
               }`}
             >
               <User size={20} />
@@ -1516,8 +1574,8 @@ export default function AdminDashboard() {
               onClick={() => handleNavigation('medical-records')}
               className={`flex items-center p-3 rounded-lg cursor-pointer ${
                 activeSection === 'medical-records' 
-                  ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
+                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
+                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
               }`}
             >
               <FileText size={20} />
@@ -1530,44 +1588,130 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className={`flex items-center justify-between p-4 ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
+        <header className={`flex items-center justify-between px-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm transition-all duration-300 h-16 border-b`}>
           <div className="flex items-center">
-            <button onClick={toggleSidebar} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+            <button onClick={toggleSidebar} className={`p-2 rounded-full transition-all duration-300 ${
+              darkMode 
+                ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
+                : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+            }`}>
               {collapsed ? <Menu size={20} /> : <X size={20} />}
             </button>
             <h1 className="ml-4 text-2xl font-bold">
-              {activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}
+              {activeSection === 'medical-records' ? 'Medical Records' : activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}
             </h1>
-            <p className="ml-2 text-sm text-gray-500">VirtualDoc Admin Dashboard</p>
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className={`flex items-center rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} px-4 py-2`}>
-              <Search size={16} className="text-gray-500" />
-              <input 
-                type="text" 
-                placeholder="Search" 
-                className={`ml-2 bg-transparent focus:outline-none w-40 ${darkMode ? 'placeholder-gray-400' : 'placeholder-gray-500'}`}
+            <div className="relative">
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'} h-5 w-5 transition-colors duration-300`} />
+              <input
+                type="text"
+                placeholder="Search..."
+                className={`pl-10 pr-4 py-2 rounded-full border transition-all duration-300 ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500' 
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-gray-300'
+                } w-64 focus:outline-none`}
               />
             </div>
-            
-            <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+
+            <button 
+              onClick={toggleDarkMode} 
+              className={`p-2 rounded-full transition-all duration-300 ${
+                darkMode 
+                  ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
+                  : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+              }`}
+            >
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
             
-            <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 relative">
-              <Bell size={20} />
-              <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">3</span>
-            </button>
+            <div className="relative" ref={notificationsRef}>
+              <button 
+                onClick={toggleNotifications}
+                className={`p-2 rounded-full relative transition-all duration-300 ${
+                  darkMode 
+                    ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
+                    : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Bell size={20} />
+                <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">2</span>
+              </button>
+
+              {/* Notifications Dropdown */}
+              {isNotificationsOpen && (
+                <div className={`absolute right-0 mt-2 w-80 ${
+                  darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                } rounded-lg shadow-lg py-1 z-50 border transition-colors duration-300`}>
+                  <div className={`flex justify-between items-center px-4 py-2 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <h3 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Notifications</h3>
+                    <button className="text-green-600 text-sm hover:text-green-500">Mark all as read</button>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.map((notification, index) => (
+                      <div key={index} className={`px-4 py-3 ${darkMode ? 'hover:bg-gray-700 border-gray-700' : 'hover:bg-gray-50 border-gray-100'} border-b last:border-0`}>
+                        <div className="flex items-start">
+                          <div className={`flex-shrink-0 ${darkMode ? 'bg-green-900' : 'bg-green-100'} p-2 rounded-full`}>
+                            <Bell className={`h-4 w-4 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+                          </div>
+                          <div className="ml-3">
+                            <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{notification.title}</p>
+                            <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{notification.message}</p>
+                            <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>{notification.time}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             
-            <div className="flex items-center">
-              <img 
-                src="/api/placeholder/40/40" 
-                alt="Profile" 
-                className="w-8 h-8 rounded-full object-cover"
-              />
-              <span className="ml-2 font-medium">Dr. Smith</span>
-              <ChevronDown size={16} className="ml-1" />
+            <div className="relative" ref={profileRef}>
+              <button 
+                onClick={toggleProfile}
+                className={`flex items-center space-x-3 rounded-lg p-2 transition-all duration-300 ${
+                  darkMode 
+                    ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
+                    : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <img 
+                  src="/api/placeholder/40/40" 
+                  alt="Profile" 
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              </button>
+
+              {/* Profile Dropdown */}
+              {isProfileOpen && (
+                <div className={`absolute right-0 mt-2 w-48 ${
+                  darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                } rounded-lg shadow-lg py-1 z-50 border transition-colors duration-300`}>
+                  <div className={`px-4 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-700'}`}>Joshua Agyeman</p>
+                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>john@example.com</p>
+                  </div>
+                  <div className="py-1">
+                    <button className={`flex items-center w-full px-4 py-2 text-sm ${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-50'}`}>
+                      <User className={`h-4 w-4 mr-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                      Your Profile
+                    </button>
+                    <button className={`flex items-center w-full px-4 py-2 text-sm ${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-50'}`}>
+                      <Settings className={`h-4 w-4 mr-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                      Settings
+                    </button>
+                  </div>
+                  <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <button className={`flex items-center w-full px-4 py-2 text-sm text-red-600 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-red-50'}`}>
+                      <LogOut className="h-4 w-4 mr-3 text-red-400" />
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

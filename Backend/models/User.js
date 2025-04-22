@@ -4,45 +4,33 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema({
   fullName: {
     type: String,
-    required: [true, 'Full name is required'],
+    required: true,
     trim: true
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
+    required: true,
     unique: true,
-    lowercase: true,
     trim: true,
-    validate: {
-      validator: function(v) {
-        return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
-      },
-      message: 'Please enter a valid email'
-    }
+    lowercase: true
   },
   phoneNumber: {
     type: String,
-    required: [true, 'Phone number is required'],
+    required: true,
     unique: true,
-    validate: {
-      validator: function(v) {
-        // Basic phone number validation (can be adjusted based on requirements)
-        return /^\+?[0-9]{10,15}$/.test(v);
-      },
-      message: 'Please enter a valid phone number'
-    }
+    trim: true
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters long']
+    required: true,
+    minlength: 6
   },
   role: {
     type: String,
     enum: ['patient', 'doctor', 'admin'],
     default: 'patient'
   },
-  // Additional fields for doctors
+  // Doctor specific fields
   specialization: {
     type: String,
     required: function() { return this.role === 'doctor'; }
@@ -55,62 +43,70 @@ const userSchema = new mongoose.Schema({
     type: Number,
     required: function() { return this.role === 'doctor'; }
   },
+  // Patient specific fields
+  dateOfBirth: {
+    type: Date,
+    required: function() { return this.role === 'patient'; }
+  },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other'],
+    required: function() { return this.role === 'patient'; }
+  },
+  address: {
+    type: String,
+    required: function() { return this.role === 'patient'; }
+  },
+  // Common fields
+  profileImage: {
+    type: String,
+    default: ''
+  },
   isVerified: {
     type: Boolean,
     default: false
   },
-  // Common fields
-  dateOfBirth: Date,
-  gender: {
-    type: String,
-    enum: ['male', 'female', 'other']
-  },
-  address: String,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
   createdAt: {
     type: Date,
     default: Date.now
-  },
-  profileImage: {
-    type: String,
-    default: ''
   }
 });
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+  
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
-// Method to check password
+// Method to compare password
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Method to check if user can login with email or phone
-userSchema.statics.findByCredentials = async function(login, password) {
-  // Check if login is email or phone number
-  const isEmail = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(login);
-  
-  let user;
-  if (isEmail) {
-    user = await this.findOne({ email: login });
-  } else {
-    user = await this.findOne({ phoneNumber: login });
-  }
-  
+// Static method to find user by credentials
+userSchema.statics.findByCredentials = async function(email, password) {
+  const user = await this.findOne({ email });
   if (!user) {
-    throw new Error('Invalid login credentials');
+    throw new Error('Invalid email or password');
   }
   
   const isMatch = await user.comparePassword(password);
   if (!isMatch) {
-    throw new Error('Invalid login credentials');
+    throw new Error('Invalid email or password');
   }
   
   return user;
 };
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);
+
 export default User; 

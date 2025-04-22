@@ -12,18 +12,23 @@ export default function AppointmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-2xl font-bold">Appointments</h1>
+        <div className="flex items-center gap-2">
+          <button className="px-4 py-2 bg-green-800 text-white rounded-lg hover:bg-green-700 transition-colors">
+            New Appointment
+          </button>
+        </div>
       </div>
       
       {/* Booking Section */}
       <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
         <h2 className="text-lg font-semibold mb-4">Book New Appointment</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Specialty</label>
             <select 
-              className="w-full border-gray-300 rounded-lg"
+              className="w-full border-gray-300 rounded-lg p-2"
               value={searchFilters.specialty}
               onChange={(e) => setSearchFilters({...searchFilters, specialty: e.target.value})}
             >
@@ -37,7 +42,7 @@ export default function AppointmentsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
             <input 
               type="date" 
-              className="w-full border-gray-300 rounded-lg"
+              className="w-full border-gray-300 rounded-lg p-2"
               value={searchFilters.date}
               onChange={(e) => setSearchFilters({...searchFilters, date: e.target.value})}
             />
@@ -45,7 +50,7 @@ export default function AppointmentsPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
             <select 
-              className="w-full border-gray-300 rounded-lg"
+              className="w-full border-gray-300 rounded-lg p-2"
               value={searchFilters.type}
               onChange={(e) => setSearchFilters({...searchFilters, type: e.target.value})}
             >
@@ -55,7 +60,7 @@ export default function AppointmentsPage() {
             </select>
           </div>
         </div>
-        <button className="mt-4 bg-green-800 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+        <button className="mt-4 bg-green-800 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
           Search Available Slots
         </button>
       </div>
@@ -63,7 +68,7 @@ export default function AppointmentsPage() {
       {/* Appointments Tabs */}
       <div className="bg-white rounded-xl shadow-sm">
         <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
+          <nav className="flex flex-wrap space-x-8 px-6" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('upcoming')}
               className={`py-4 border-b-2 font-medium text-sm ${

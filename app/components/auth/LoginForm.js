@@ -27,9 +27,40 @@ export default function LoginForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('Dashboard functionality is not implemented yet');
-    // Comment out or remove the router.push line
-    // router.push('/dashboard/admin');
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // Store token
+      localStorage.setItem('token', data.token);
+      
+      // Redirect based on role from response
+      switch (data.user.role) {
+        case 'doctor':
+          router.push('/doctor-dashboard');
+          break;
+        case 'admin':
+          router.push('/admin-dashboard');
+          break;
+        default:
+          router.push('/patient-dashboard');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -98,7 +129,7 @@ export default function LoginForm() {
               <div>
                 <div className="flex justify-between mb-2">
                   <label className="block text-gray-700 text-sm font-medium">Password</label>
-                  <a href="/auth/forgot-password" className="text-sm text-green-700 hover:text-green-800">Forgot Password?</a>
+                  <a href="#" className="text-sm text-green-700 hover:text-green-800">Forgot Password?</a>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -130,7 +161,7 @@ export default function LoginForm() {
               
               <div className="text-center mt-6">
                 <p className="text-gray-600">
-                  Don't have an account? <Link href="/auth/register" className="text-green-700 hover:text-green-800 font-medium">Sign up</Link>
+                  Don't have an account? <Link href="/register" className="text-green-700 hover:text-green-800 font-medium">Sign up</Link>
                 </p>
               </div>
             </form>

@@ -7,8 +7,13 @@ export default function PrescriptionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-2xl font-bold">E-Prescriptions</h1>
+        <div className="flex items-center gap-2">
+          <button className="px-4 py-2 bg-green-800 text-white rounded-lg hover:bg-green-700 transition-colors">
+            Request Prescription
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
@@ -20,7 +25,7 @@ export default function PrescriptionsPage() {
           <div className="divide-y divide-gray-200">
             {prescriptions.map((prescription, index) => (
               <div key={index} className="py-4">
-                <div className="flex justify-between items-start">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
                     <h3 className="font-medium text-gray-900">{prescription.medication}</h3>
                     <p className="text-sm text-gray-500">Prescribed by Dr. {prescription.doctor}</p>
@@ -31,7 +36,7 @@ export default function PrescriptionsPage() {
                       </span>
                     </div>
                   </div>
-                  <button className="flex items-center space-x-2 bg-green-800 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                  <button className="flex items-center gap-2 bg-green-800 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
                     <DocumentArrowDownIcon className="w-5 h-5" />
                     <span>Download PDF</span>
                   </button>
