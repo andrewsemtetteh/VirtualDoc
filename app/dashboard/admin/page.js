@@ -7,6 +7,8 @@ import {
   ChevronDown, LayoutDashboard, ShoppingCart, User, Settings,
   LogOut
 } from 'lucide-react';
+import { Menu as HMenu, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 
 export default function AdminDashboard() {
   const [mounted, setMounted] = useState(false);
@@ -228,11 +230,11 @@ export default function AdminDashboard() {
                   {[1, 2, 3, 4].map((item) => (
                     <div key={item} className={`p-3 md:p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex justify-between`}>
                       <div className="flex items-center">
-                        <img 
-                          src={`/api/placeholder/${40 + item}/${40 + item}`} 
-                          alt="Patient" 
-                          className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
-                        />
+                        <div className={`w-8 h-8 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
+                          <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {["JS", "EJ", "MB", "SD"][item % 4]}
+                          </span>
+                        </div>
                         <div className="ml-3">
                           <p className="text-sm md:text-base font-medium">
                             {["John Smith", "Emma Johnson", "Michael Brown", "Sarah Davis"][item % 4]}
@@ -417,11 +419,11 @@ export default function AdminDashboard() {
                     {[1, 2, 3, 4].map((item) => (
                       <div key={item} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex justify-between items-center`}>
                         <div className="flex items-center">
-                          <img 
-                            src={`/api/placeholder/${40 + item}/${40 + item}`} 
-                            alt="Patient" 
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
+                          <div className={`w-8 h-8 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
+                            <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                              {["JS", "EJ", "MB", "SD"][item % 4]}
+                            </span>
+                          </div>
                           <div className="ml-3">
                             <p className="font-medium">
                               {["John Smith", "Emma Johnson", "Michael Brown", "Sarah Davis"][item % 4]}
@@ -612,14 +614,14 @@ export default function AdminDashboard() {
                       {[1, 2, 3, 4].map((item) => (
                         <div key={item} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex justify-between items-center`}>
                           <div className="flex items-center">
-                            <img 
-                              src={`/api/placeholder/${40 + item}/${40 + item}`} 
-                              alt="Patient" 
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
+                            <div className={`w-8 h-8 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
+                              <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                {["JS", "EJ", "MB", "SD"][item % 4]}
+                              </span>
+                            </div>
                             <div className="ml-3">
                               <p className="font-medium">
-                                {["Emily Wilson", "Robert Johnson", "Linda Davis", "Michael Taylor"][item % 4]}
+                                {["John Smith", "Emma Johnson", "Michael Brown", "Sarah Davis"][item % 4]}
                               </p>
                               <p className="text-sm text-gray-500">
                                 {["+1 (555) 123-4567", "+1 (555) 987-6543", "+1 (555) 456-7890", "+1 (555) 234-5678"][item % 4]}
@@ -715,12 +717,12 @@ export default function AdminDashboard() {
                           <tr key={index} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
                             <td className="py-4 px-3 md:px-6">
                               <div className="flex items-center">
-                                <img 
-                                  src={`/api/placeholder/${40 + index}/${40 + index}`}
-                                  alt={patient.name}
-                                  className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
-                                />
-                                <span className="ml-3 text-sm md:text-base font-medium">{patient.name}</span>
+                                <div className={`w-8 h-8 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
+                                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    {patient.name.split(' ').map(n => n[0]).join('')}
+                                  </span>
+                                </div>
+                                <span className="ml-3">{patient.name}</span>
                               </div>
                             </td>
                             <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.id}</td>
@@ -1238,6 +1240,8 @@ export default function AdminDashboard() {
                       {/* Record Categories */}
                       <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                         <div className="flex justify-between items-center mb-6">
+
+                          
                           <h3 className="text-lg font-medium">Record Categories</h3>
                           <select className={`p-2 rounded border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
                             <option>All Time</option>
@@ -1427,11 +1431,11 @@ export default function AdminDashboard() {
                                 <td className="py-4 font-medium">{record.id}</td>
                                 <td className="py-4">
                                   <div className="flex items-center">
-                                    <img 
-                                      src={`/api/placeholder/${40 + index}/${40 + index}`}
-                                      alt={record.patient}
-                                      className="w-8 h-8 rounded-full object-cover"
-                                    />
+                                    <div className={`w-8 h-8 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
+                                      <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        {record.patient.split(' ').map(n => n[0]).join('')}
+                                      </span>
+                                    </div>
                                     <span className="ml-3">{record.patient}</span>
                                   </div>
                                 </td>
@@ -1510,6 +1514,8 @@ export default function AdminDashboard() {
         return null;
     }
   };
+
+  if (!mounted) return null;
 
   return (
     <div className={`flex h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-green-50 to-gray-100 text-gray-900'} transition-all duration-300`}>
@@ -1683,50 +1689,87 @@ export default function AdminDashboard() {
               )}
             </div>
             
-            <div className="relative" ref={profileRef}>
-              <button 
-                onClick={toggleProfile}
-                className={`flex items-center space-x-3 rounded-lg p-2 transition-all duration-300 ${
-                  darkMode 
-                    ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
-                    : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <img 
-                  src="/api/placeholder/40/40" 
-                  alt="Profile" 
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              </button>
+            <HMenu as="div" className="relative" ref={profileRef}>
+              <HMenu.Button className={`flex items-center space-x-3 p-2 focus:outline-none rounded-lg ${
+                darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+              }`}>
+                <div className={`w-8 h-8 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
+                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>JA</span>
+                </div>
+                <div className="text-left hidden md:block">
+                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Joshua Agyeman</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Administrator</p>
+                </div>
+              </HMenu.Button>
 
-              {/* Profile Dropdown */}
-              {isProfileOpen && (
-                <div className={`absolute right-0 mt-2 w-48 ${
-                  darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                } rounded-lg shadow-lg py-1 z-50 border transition-colors duration-300`}>
-                  <div className={`px-4 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-700'}`}>Joshua Agyeman</p>
-                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>john@example.com</p>
-                  </div>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <HMenu.Items className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg focus:outline-none ${
+                  darkMode ? 'bg-gray-800' : 'bg-white'
+                }`}>
                   <div className="py-1">
-                    <button className={`flex items-center w-full px-4 py-2 text-sm ${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-50'}`}>
-                      <User className={`h-4 w-4 mr-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-                      Your Profile
-                    </button>
-                    <button className={`flex items-center w-full px-4 py-2 text-sm ${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-50'}`}>
-                      <Settings className={`h-4 w-4 mr-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-                      Settings
-                    </button>
+                    <HMenu.Item>
+                      {({ active }) => (
+                        <a
+                          href="/dashboard/admin/profile"
+                          className={`${
+                            active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
+                          } block px-4 py-2 text-sm rounded-t-lg ${
+                            darkMode ? 'text-gray-200' : 'text-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center">
+                            <User className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                            Your Profile
+                          </div>
+                        </a>
+                      )}
+                    </HMenu.Item>
+                    <HMenu.Item>
+                      {({ active }) => (
+                        <a
+                          href="/dashboard/admin/settings"
+                          className={`${
+                            active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
+                          } block px-4 py-2 text-sm ${
+                            darkMode ? 'text-gray-200' : 'text-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center">
+                            <Settings className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                            Settings
+                          </div>
+                        </a>
+                      )}
+                    </HMenu.Item>
                   </div>
                   <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <button className={`flex items-center w-full px-4 py-2 text-sm text-red-600 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-red-50'}`}>
-                      <LogOut className="h-4 w-4 mr-3 text-red-400" />
-                      Sign out
-                    </button>
+                    <HMenu.Item>
+                      {({ active }) => (
+                        <a
+                          href="/logout"
+                          className={`${
+                            active ? (darkMode ? 'bg-gray-700' : 'bg-red-50') : ''
+                          } block px-4 py-2 text-sm text-red-600 rounded-b-lg`}
+                        >
+                          <div className="flex items-center">
+                            <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-red-500' : 'text-red-600'}`} />
+                            Sign out
+                          </div>
+                        </a>
+                      )}
+                    </HMenu.Item>
                   </div>
-                </div>
-              )}
-            </div>
+                </HMenu.Items>
+              </Transition>
+            </HMenu>
           </div>
         </header>
 

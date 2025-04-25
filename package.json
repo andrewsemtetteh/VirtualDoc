@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.2",
     "@heroicons/react": "^2.2.0",
     "@prisma/client": "^6.6.0",
     "@supabase/ssr": "^0.6.1",
@@ -19,7 +20,7 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.488.0",
     "mongodb": "^6.16.0",
-    "mongoose": "^8.13.2",
+    "mongoose": "^8.13.3",
     "next": "^15.2.2",
     "next-auth": "^4.24.5",
     "next-connect": "^1.0.0",
