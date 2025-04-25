@@ -84,7 +84,7 @@ export default function PatientDashboard() {
         return (
           <div className="space-y-6">
             {/* Welcome Banner with Profile Summary */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gradient-to-r from-green-900 to-green-800' : 'bg-gradient-to-r from-green-600 to-green-500'} text-white`}>
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gradient-to-r from-green-900 to-green-800' : 'bg-gradient-to-r from-green-900 to-green-800'} text-white`}>
               {/* Welcome Section */}
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -103,11 +103,11 @@ export default function PatientDashboard() {
               </div>
 
               {/* Profile Summary */}
-              <div className={`p-4 rounded-lg ${darkMode ? 'bg-green-800/50' : 'bg-white/20'} backdrop-blur-sm`}>
+              <div className={`p-4 rounded-lg ${darkMode ? 'bg-green-800/50' : 'bg-green-800/50'} backdrop-blur-sm`}>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="flex items-center space-x-4">
-                    <div className={`w-16 h-16 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-white'} flex items-center justify-center`}>
-                      <span className={`text-2xl font-bold ${darkMode ? 'text-gray-300' : 'text-green-600'}`}>JD</span>
+                    <div className={`w-16 h-16 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-700'} flex items-center justify-center`}>
+                      <span className={`text-2xl font-bold ${darkMode ? 'text-gray-300' : 'text-gray-300'}`}>JD</span>
                     </div>
                     <div>
                       <h3 className="font-medium text-white">John Doe</h3>
@@ -115,7 +115,7 @@ export default function PatientDashboard() {
                       <p className="text-sm text-green-100">Member since 2023</p>
                     </div>
                   </div>
-                  <div className={`border-l border-r ${darkMode ? 'border-green-700' : 'border-white/30'} px-6`}>
+                  <div className={`border-l border-r ${darkMode ? 'border-green-700' : 'border-green-700'} px-6`}>
                     <h4 className="text-sm font-medium text-green-100 mb-2">Health Status</h4>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 rounded-full bg-green-400"></div>
