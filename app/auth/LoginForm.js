@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import Copyright from '../components/Copyright';
 
@@ -28,9 +29,50 @@ export default function LoginForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('Dashboard functionality is not implemented yet');
-    // Comment out or remove the router.push line
-    // router.push('/dashboard/admin');
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await signIn('credentials', {
+        login: formData.login,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch the session to get user role
+      const response = await fetch('/api/auth/session');
+      const session = await response.json();
+
+      if (session?.user?.role) {
+        // Redirect based on user role
+        switch (session.user.role) {
+          case 'admin':
+            router.push('/dashboard/admin');
+            break;
+          case 'doctor':
+            router.push('/dashboard/doctor');
+            break;
+          case 'patient':
+            router.push('/dashboard/patient');
+            break;
+          default:
+            setError('Invalid user role');
+            setLoading(false);
+        }
+      } else {
+        setError('Failed to get user session');
+        setLoading(false);
+      }
+    } catch (error) {
+      setError('An error occurred during sign in');
+      setLoading(false);
+    }
   };
 
   return (
@@ -100,7 +142,7 @@ export default function LoginForm() {
                 <div>
                   <div className="flex justify-between mb-2">
                     <label className="block text-gray-700 text-sm font-medium">Password</label>
-                    <a href="/auth/forgot-password" className="text-sm text-green-700 hover:text-green-800">Forgot Password?</a>
+                    <Link href="/auth/forgot-password" className="text-sm text-green-700 hover:text-green-800">Forgot Password?</Link>
                   </div>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
