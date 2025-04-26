@@ -5,6 +5,14 @@ import { Providers } from './providers';
 
 const inter = Inter({ subsets: ["latin"] });
 
+export const metadata = {
+  title: "Virtual Doc",
+  description: "Your trusted telemedicine platform for virtual healthcare",
+  icons: {
+    icon: '/favicon.png',
+  },
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -33,11 +41,3 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
-
-export const metadata = {
-  title: "Virtual Doc",
-  description: "Your trusted telemedicine platform for virtual healthcare",
-  icons: {
-    icon: '/favicon.png',
-  },
-};

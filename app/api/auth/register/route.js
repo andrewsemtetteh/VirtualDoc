@@ -5,10 +5,13 @@ import User from '../../../../models/User';
 
 export async function POST(req) {
   try {
+    console.log('Starting registration process...');
     await dbConnect();
+    console.log('Connected to database');
 
     const data = await req.formData();
     const formData = Object.fromEntries(data);
+    console.log('Registration attempt for:', formData.email);
 
     // Check if user already exists
     const existingUser = await User.findOne({
@@ -19,6 +22,7 @@ export async function POST(req) {
     });
 
     if (existingUser) {
+      console.log('Registration failed: User already exists');
       return NextResponse.json(
         { error: 'User with this email or phone number already exists' },
         { status: 400 }
@@ -58,15 +62,41 @@ export async function POST(req) {
 
     // Create new user
     const user = await User.create(userData);
+    console.log('User registered successfully:', {
+      id: user._id,
+      email: user.email,
+      role: user.role
+    });
 
     return NextResponse.json(
-      { message: 'Registration successful', userId: user._id },
+      { 
+        message: 'Registration successful',
+        userId: user._id,
+        role: user.role
+      },
       { status: 201 }
     );
   } catch (error) {
     console.error('Registration error:', error);
+    
+    // Handle specific error cases
+    if (error.code === 11000) {
+      return NextResponse.json(
+        { error: 'This email or phone number is already registered' },
+        { status: 400 }
+      );
+    }
+
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return NextResponse.json(
+        { error: 'Validation failed', details: validationErrors },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Registration failed' },
+      { error: 'Registration failed. Please try again.' },
       { status: 500 }
     );
   }

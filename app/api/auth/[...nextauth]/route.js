@@ -14,7 +14,9 @@ export const authOptions = {
       },
       async authorize(credentials) {
         try {
+          console.log('Starting authentication for:', credentials.login);
           await dbConnect();
+          console.log('Connected to database');
 
           // Find user by email or phone number
           const user = await User.findOne({
@@ -25,15 +27,19 @@ export const authOptions = {
           });
 
           if (!user) {
+            console.log('No user found for:', credentials.login);
             throw new Error('No user found with this email or phone number');
           }
 
+          console.log('User found, verifying password...');
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
           if (!isPasswordValid) {
+            console.log('Invalid password for user:', credentials.login);
             throw new Error('Invalid password');
           }
 
+          console.log('Authentication successful for:', credentials.login);
           return {
             id: user._id.toString(),
             email: user.email,
@@ -41,8 +47,8 @@ export const authOptions = {
             role: user.role,
           };
         } catch (error) {
-          console.error('Auth error:', error);
-          throw new Error(error.message || 'Authentication failed');
+          console.error('Authentication error:', error);
+          throw error;
         }
       }
     })
@@ -50,6 +56,7 @@ export const authOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        console.log('Creating JWT for user:', user.email);
         token.role = user.role;
         token.id = user.id;
       }
@@ -57,6 +64,7 @@ export const authOptions = {
     },
     async session({ session, token }) {
       if (token) {
+        console.log('Creating session for user role:', token.role);
         session.user.role = token.role;
         session.user.id = token.id;
       }

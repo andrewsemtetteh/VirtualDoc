@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import { 
   BarChart, Users, Calendar, FileText, 
   Menu, X, Search, Bell, Sun, Moon,
@@ -9,8 +11,11 @@ import {
 } from 'lucide-react';
 import { Menu as HMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
+import Image from 'next/image';
 
 export default function AdminDashboard() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -23,9 +28,11 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     setMounted(true);
-    const savedTheme = localStorage.getItem('theme');
-    setDarkMode(savedTheme === 'dark');
-  }, []);
+    // Check authentication
+    if (status === 'unauthenticated') {
+      router.push('/auth/login');
+    }
+  }, [status, router]);
 
   useEffect(() => {
     if (mounted) {
@@ -1515,6 +1522,12 @@ export default function AdminDashboard() {
     }
   };
 
+  // Add logout handler
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    router.push('/');
+  };
+
   if (!mounted) return null;
 
   return (
@@ -1693,11 +1706,25 @@ export default function AdminDashboard() {
               <HMenu.Button className={`flex items-center space-x-3 p-2 focus:outline-none rounded-lg ${
                 darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
               }`}>
-                <div className={`w-8 h-8 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
-                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>JA</span>
+                <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
+                  {session?.user?.profilePicture ? (
+                    <Image 
+                      src={session.user.profilePicture} 
+                      alt={session.user.name} 
+                      width={32} 
+                      height={32} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className={`text-sm font-medium text-white`}>
+                      {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('') : 'AT'}
+                    </span>
+                  )}
                 </div>
                 <div className="text-left hidden md:block">
-                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Joshua Agyeman</p>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                    {session?.user?.name || 'Andrew Sem Tetteh'}
+                  </p>
                   <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Administrator</p>
                 </div>
               </HMenu.Button>
@@ -1712,7 +1739,7 @@ export default function AdminDashboard() {
                 leaveTo="transform opacity-0 scale-95"
               >
                 <HMenu.Items className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg focus:outline-none ${
-                  darkMode ? 'bg-gray-800' : 'bg-white'
+                  darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
                 }`}>
                   <div className="py-1">
                     <HMenu.Item>
@@ -1753,9 +1780,9 @@ export default function AdminDashboard() {
                   <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <HMenu.Item>
                       {({ active }) => (
-                        <a
-                          href="/logout"
-                          className={`${
+                        <button
+                          onClick={handleLogout}
+                          className={`w-full text-left ${
                             active ? (darkMode ? 'bg-gray-700' : 'bg-red-50') : ''
                           } block px-4 py-2 text-sm text-red-600 rounded-b-lg`}
                         >
@@ -1763,7 +1790,7 @@ export default function AdminDashboard() {
                             <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-red-500' : 'text-red-600'}`} />
                             Sign out
                           </div>
-                        </a>
+                        </button>
                       )}
                     </HMenu.Item>
                   </div>

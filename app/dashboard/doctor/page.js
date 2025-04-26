@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Bell, Settings, LogOut, User, Menu, X, Search, Sun, Moon } from 'lucide-react';
 import { Menu as HMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
+import Image from 'next/image';
 
 export default function DoctorDashboard() {
   const [mounted, setMounted] = useState(false);
@@ -565,11 +566,25 @@ export default function DoctorDashboard() {
               <HMenu.Button className={`flex items-center space-x-3 p-2 focus:outline-none rounded-lg ${
                 darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
               }`}>
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                  <span className={`${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>JD</span>
+                <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
+                  {session?.user?.profilePicture ? (
+                    <Image 
+                      src={session.user.profilePicture} 
+                      alt={session.user.name} 
+                      width={32} 
+                      height={32} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className={`text-sm font-medium text-white`}>
+                      {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('') : 'JD'}
+                    </span>
+                  )}
                 </div>
                 <div className="text-left hidden md:block">
-                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Dr. John Doe</p>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                    {session?.user?.name || 'Dr. John Doe'}
+                  </p>
                   <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Cardiologist</p>
                 </div>
               </HMenu.Button>

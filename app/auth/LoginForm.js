@@ -25,6 +25,8 @@ export default function LoginForm() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
@@ -33,6 +35,8 @@ export default function LoginForm() {
     setError('');
 
     try {
+      console.log('Attempting to sign in with:', formData.login);
+      
       const result = await signIn('credentials', {
         login: formData.login,
         password: formData.password,
@@ -40,37 +44,45 @@ export default function LoginForm() {
       });
 
       if (result.error) {
+        console.error('Sign in error:', result.error);
         setError(result.error);
         setLoading(false);
         return;
       }
 
       // Fetch the session to get user role
+      console.log('Fetching user session...');
       const response = await fetch('/api/auth/session');
       const session = await response.json();
 
-      if (session?.user?.role) {
-        // Redirect based on user role
-        switch (session.user.role) {
-          case 'admin':
-            router.push('/dashboard/admin');
-            break;
-          case 'doctor':
-            router.push('/dashboard/doctor');
-            break;
-          case 'patient':
-            router.push('/dashboard/patient');
-            break;
-          default:
-            setError('Invalid user role');
-            setLoading(false);
-        }
-      } else {
+      if (!session?.user) {
+        console.error('No session found after login');
         setError('Failed to get user session');
         setLoading(false);
+        return;
+      }
+
+      console.log('Login successful, redirecting user with role:', session.user.role);
+
+      // Redirect based on user role
+      switch (session.user.role) {
+        case 'admin':
+          router.push('/dashboard/admin');
+          break;
+        case 'doctor':
+          router.push('/dashboard/doctor');
+          break;
+        case 'patient':
+          router.push('/dashboard/patient');
+          break;
+        default:
+          console.error('Invalid user role:', session.user.role);
+          setError('Invalid user role');
+          setLoading(false);
       }
     } catch (error) {
-      setError('An error occurred during sign in');
+      console.error('Login error:', error);
+      setError('An error occurred during sign in. Please try again.');
       setLoading(false);
     }
   };
