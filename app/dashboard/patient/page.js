@@ -4,10 +4,12 @@ import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Bell,
 import { Menu as HMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import Image from 'next/image';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function PatientDashboard() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -794,17 +796,19 @@ export default function PatientDashboard() {
                   <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <HMenu.Item>
                       {({ active }) => (
-                        <a
-                          href="/logout"
+                        <button
+                          onClick={() => {
+                            signOut({ callbackUrl: '/' });
+                          }}
                           className={`${
                             active ? (darkMode ? 'bg-gray-700' : 'bg-red-50') : ''
-                          } block px-4 py-2 text-sm text-red-600 rounded-b-lg`}
+                          } block w-full text-left px-4 py-2 text-sm text-red-600 rounded-b-lg`}
                         >
                           <div className="flex items-center">
                             <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-red-500' : 'text-red-600'}`} />
                             Sign out
                           </div>
-                        </a>
+                        </button>
                       )}
                     </HMenu.Item>
                   </div>

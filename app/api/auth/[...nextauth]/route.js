@@ -34,15 +34,29 @@ export const authOptions = {
             throw new Error('Your account is pending verification');
           }
 
+          // For debugging
+          console.log('User data:', {
+            ...user,
+            password: '[REDACTED]'
+          });
+
           // Return user object without password
-          return {
+          const userData = {
             id: user._id.toString(),
             email: user.email,
             name: user.fullName,
             role: user.role,
-            status: user.status
+            status: user.status,
+            specialization: user.specialization,
+            profilePicture: user.profilePicture
           };
+
+          // For debugging
+          console.log('Returning user data:', userData);
+
+          return userData;
         } catch (error) {
+          console.error('Authorization error:', error);
           throw new Error(error.message);
         }
       }
@@ -50,17 +64,35 @@ export const authOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
+      // For debugging
+      console.log('JWT Callback - Input:', { token, user });
+
       if (user) {
         token.role = user.role;
         token.status = user.status;
+        token.specialization = user.specialization;
+        token.profilePicture = user.profilePicture;
       }
+
+      // For debugging
+      console.log('JWT Callback - Output token:', token);
+
       return token;
     },
     async session({ session, token }) {
+      // For debugging
+      console.log('Session Callback - Input:', { session, token });
+
       if (token) {
         session.user.role = token.role;
         session.user.status = token.status;
+        session.user.specialization = token.specialization;
+        session.user.profilePicture = token.profilePicture;
       }
+
+      // For debugging
+      console.log('Session Callback - Output session:', session);
+
       return session;
     }
   },
@@ -73,6 +105,7 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: true, // Enable debug mode
 };
 
 const handler = NextAuth(authOptions);

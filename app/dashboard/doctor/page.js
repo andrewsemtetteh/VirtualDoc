@@ -4,8 +4,82 @@ import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Bell,
 import { Menu as HMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import Image from 'next/image';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+
+function PendingApprovalPage({ darkMode }) {
+  return (
+    <div className={`min-h-screen flex items-center justify-center ${
+      darkMode ? 'bg-gray-900' : 'bg-gray-50'
+    }`}>
+      <div className={`max-w-md w-full mx-4 p-8 rounded-lg shadow-lg ${
+        darkMode ? 'bg-gray-800' : 'bg-white'
+      }`}>
+        <div className="text-center">
+          <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center ${
+            darkMode ? 'bg-green-900' : 'bg-green-100'
+          }`}>
+            <svg xmlns="http://www.w3.org/2000/svg" className={`h-8 w-8 ${
+              darkMode ? 'text-green-400' : 'text-green-600'
+            }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className={`mt-4 text-2xl font-bold ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}>Account Under Review</h2>
+          <p className={`mt-2 text-sm ${
+            darkMode ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            Thank you for registering with VirtualDoc. Our team is currently reviewing your credentials.
+            You will be notified once your account has been approved.
+          </p>
+          <div className="mt-6">
+            <div className={`p-4 rounded-lg ${
+              darkMode ? 'bg-gray-700' : 'bg-gray-50'
+            }`}>
+              <h3 className={`text-sm font-medium ${
+                darkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>What happens next?</h3>
+              <ul className={`mt-2 text-sm space-y-2 ${
+                darkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                <li className="flex items-center">
+                  <svg className="h-4 w-4 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Our team will verify your medical license
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-4 w-4 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Review your professional credentials
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-4 w-4 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Send you an email once approved
+                </li>
+              </ul>
+            </div>
+            <p className={`mt-4 text-xs ${
+              darkMode ? 'text-gray-500' : 'text-gray-400'
+            }`}>
+              This process typically takes 1-2 business days. If you have any questions,
+              please contact our support team.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function DoctorDashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -24,11 +98,15 @@ export default function DoctorDashboard() {
   const notificationsRef = useRef(null);
   const profileRef = useRef(null);
 
+  const [doctorProfile, setDoctorProfile] = useState(null);
+
   useEffect(() => {
     setMounted(true);
     const savedTheme = localStorage.getItem('theme');
     setDarkMode(savedTheme === 'dark');
-  }, []);
+    // Log session data to help debug
+    console.log('Session data:', session);
+  }, [session]);
 
   useEffect(() => {
     if (mounted) {
@@ -52,6 +130,21 @@ export default function DoctorDashboard() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    // Check authentication
+    if (status === 'unauthenticated') {
+      router.push('/auth/login');
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetch(`/api/doctor/profile?email=${encodeURIComponent(session.user.email)}`)
+        .then(res => res.json())
+        .then(data => setDoctorProfile(data));
+    }
+  }, [session]);
 
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
@@ -354,7 +447,19 @@ export default function DoctorDashboard() {
     setShowProfileMenu(!showProfileMenu);
   };
 
-  if (!mounted) return null;
+  // Show loading state
+  if (!mounted || status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
+
+  // Show pending approval page
+  if (session?.user?.status === 'pending') {
+    return <PendingApprovalPage darkMode={darkMode} />;
+  }
 
   return (
     <div className={`flex h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-green-50 to-gray-100 text-gray-900'} transition-all duration-300`}>
@@ -581,9 +686,11 @@ export default function DoctorDashboard() {
                 </div>
                 <div className="text-left hidden md:block">
                   <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                    {session?.user?.name || 'Dr. John Doe'}
+                    {session?.user?.name ? `Dr. ${session.user.name}` : 'Loading...'}
                   </p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Cardiologist</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {doctorProfile?.specialization ? doctorProfile.specialization : 'Loading...'}
+                  </p>
                 </div>
               </HMenu.Button>
 
@@ -638,17 +745,19 @@ export default function DoctorDashboard() {
                   <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <HMenu.Item>
                       {({ active }) => (
-                        <a
-                          href="/logout"
+                        <button
+                          onClick={() => {
+                            signOut({ callbackUrl: '/' });
+                          }}
                           className={`${
                             active ? (darkMode ? 'bg-gray-700' : 'bg-red-50') : ''
-                          } block px-4 py-2 text-sm text-red-600 rounded-b-lg`}
+                          } block w-full text-left px-4 py-2 text-sm text-red-600 rounded-b-lg`}
                         >
                           <div className="flex items-center">
                             <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-red-500' : 'text-red-600'}`} />
                             Sign out
                           </div>
-                        </a>
+                        </button>
                       )}
                     </HMenu.Item>
                   </div>
