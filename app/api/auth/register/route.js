@@ -1,96 +1,90 @@
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
 import bcrypt from 'bcryptjs';
-import dbConnect from '../../../../lib/dbConnect';
-import User from '../../../../models/User';
+import { sendVerificationEmail } from '@/lib/email';
 
-export async function POST(req) {
+export async function POST(request) {
   try {
-    console.log('Starting registration process...');
-    await dbConnect();
-    console.log('Connected to database');
+    const { fullName, email, password, role, phoneNumber, specialization, licenseNumber, yearsOfExperience, dateOfBirth, gender } = await request.json();
 
-    const data = await req.formData();
-    const formData = Object.fromEntries(data);
-    console.log('Registration attempt for:', formData.email);
+    // Validate required fields
+    if (!fullName || !email || !password || !role) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password must be at least 6 characters long' },
+        { status: 400 }
+      );
+    }
+
+    // Connect to database
+    const { db } = await connectToDatabase();
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: formData.email });
-
+    const existingUser = await db.collection('users').findOne({ email });
     if (existingUser) {
-      console.log('Registration failed: User already exists');
       return NextResponse.json(
-        { error: 'User with this email already exists' },
+        { error: 'User already exists' },
         { status: 400 }
       );
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(formData.password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user object based on role
-    const userData = {
-      fullName: formData.fullName,
-      email: formData.email,
+    // Create user object
+    const user = {
+      fullName,
+      email,
       password: hashedPassword,
-      role: formData.role,
+      role,
+      phoneNumber: phoneNumber || null,
+      specialization: role === 'doctor' ? specialization : null,
+      licenseNumber: role === 'doctor' ? licenseNumber : null,
+      yearsOfExperience: role === 'doctor' ? yearsOfExperience : null,
+      dateOfBirth: role === 'patient' ? dateOfBirth : null,
+      gender: role === 'patient' ? gender : null,
+      status: role === 'doctor' ? 'pending' : 'active',
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
-    // Add role-specific fields
-    if (formData.role === 'doctor') {
-      userData.specialization = formData.specialization;
-      userData.licenseNumber = formData.licenseNumber;
-      userData.yearsOfExperience = parseInt(formData.yearsOfExperience);
-      // Handle license document upload here
-      if (formData.licenseDocument) {
-        userData.licenseDocument = formData.licenseDocument;
-      }
-    } else if (formData.role === 'patient') {
-      userData.dateOfBirth = new Date(formData.dateOfBirth);
-      userData.gender = formData.gender;
-    }
+    // Insert user into database
+    const result = await db.collection('users').insertOne(user);
 
-    // Handle profile picture upload if provided
-    if (formData.profilePicture) {
-      userData.profilePicture = formData.profilePicture;
+    // Send verification email for doctors
+    if (role === 'doctor') {
+      await sendVerificationEmail(email, fullName);
     }
-
-    // Create new user
-    const user = await User.create(userData);
-    console.log('User registered successfully:', {
-      id: user._id,
-      email: user.email,
-      role: user.role
-    });
 
     return NextResponse.json(
       { 
-        message: 'Registration successful',
-        userId: user._id,
-        role: user.role
+        message: 'Registration successful', 
+        userId: result.insertedId,
+        role: user.role,
+        status: user.status
       },
       { status: 201 }
     );
   } catch (error) {
     console.error('Registration error:', error);
-    
-    // Handle specific error cases
-    if (error.code === 11000) {
-      return NextResponse.json(
-        { error: 'This email is already registered' },
-        { status: 400 }
-      );
-    }
-
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationErrors },
-        { status: 400 }
-      );
-    }
-
     return NextResponse.json(
-      { error: 'Registration failed. Please try again.' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

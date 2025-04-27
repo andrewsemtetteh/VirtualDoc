@@ -10,7 +10,7 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    login: '',
+    email: '',
     password: ''
   });
   const [error, setError] = useState('');
@@ -36,10 +36,10 @@ export default function LoginForm() {
     setError('');
 
     try {
-      console.log('Attempting to sign in with:', formData.login);
+      console.log('Attempting to sign in with:', formData.email);
       
       const result = await signIn('credentials', {
-        login: formData.login,
+        email: formData.email,
         password: formData.password,
         redirect: false,
       });
@@ -66,21 +66,26 @@ export default function LoginForm() {
       console.log('Login successful, redirecting user with role:', session.user.role);
 
       // Redirect based on user role
-      switch (session.user.role) {
-        case 'admin':
-          router.push('/dashboard/admin');
-          break;
-        case 'doctor':
-          router.push('/dashboard/doctor');
-          break;
-        case 'patient':
-          router.push('/dashboard/patient');
-          break;
-        default:
-          console.error('Invalid user role:', session.user.role);
-          setError('Invalid user role');
-          setLoading(false);
+      const role = session.user.role?.toLowerCase();
+      if (!role) {
+        console.error('No role found in session');
+        setError('Invalid user role');
+        setLoading(false);
+        return;
       }
+
+      // Ensure the role is valid
+      const validRoles = ['admin', 'doctor', 'patient'];
+      if (!validRoles.includes(role)) {
+        console.error('Invalid user role:', role);
+        setError('Invalid user role');
+        setLoading(false);
+        return;
+      }
+
+      // Redirect to the appropriate dashboard
+      router.push(`/dashboard/${role}`);
+      setLoading(false);
     } catch (error) {
       console.error('Login error:', error);
       setError('An error occurred during sign in. Please try again.');
@@ -141,8 +146,8 @@ export default function LoginForm() {
                     </div>
                     <input
                       type="email"
-                      name="login"
-                      value={formData.login}
+                      name="email"
+                      value={formData.email}
                       onChange={handleChange}
                       className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                       placeholder="Enter your email address"

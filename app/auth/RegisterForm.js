@@ -17,7 +17,8 @@ export default function RegisterForm() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'customer',
+    role: 'patient',
+    phoneNumber: '',
     specialization: '',
     licenseNumber: '',
     yearsOfExperience: '',
@@ -94,7 +95,7 @@ export default function RegisterForm() {
     setError('');
     setSuccess('');
     
-    // Validate required fields
+    // Basic validations
     if (!formData.fullName) {
       setError('Full name is required');
       setLoading(false);
@@ -118,29 +119,29 @@ export default function RegisterForm() {
       setLoading(false);
       return;
     }
+    
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
 
     // Doctor-specific validations
     if (formData.role === 'doctor') {
       if (!formData.specialization) {
-        setError('Specialization is required');
+        setError('Specialization is required for doctors');
         setLoading(false);
         return;
       }
       
       if (!formData.licenseNumber) {
-        setError('License number is required');
+        setError('License number is required for doctors');
         setLoading(false);
         return;
       }
       
       if (!formData.yearsOfExperience) {
-        setError('Years of experience is required');
-        setLoading(false);
-        return;
-      }
-      
-      if (!licenseDocument) {
-        setError('License document is required');
+        setError('Years of experience is required for doctors');
         setLoading(false);
         return;
       }
@@ -164,7 +165,9 @@ export default function RegisterForm() {
     try {
       const formDataToSend = new FormData();
       Object.keys(formData).forEach(key => {
-        formDataToSend.append(key, formData[key]);
+        if (formData[key] !== null && formData[key] !== '') {
+          formDataToSend.append(key, formData[key]);
+        }
       });
       if (profileImage) {
         formDataToSend.append('profileImage', profileImage);
@@ -402,6 +405,21 @@ export default function RegisterForm() {
                   <p className="text-sm text-gray-500 mb-4">We require both your email and phone number for account security and communication purposes.</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Phone Number (Optional) */}
+                    <div>
+                      <label className="block text-gray-700 text-sm font-medium mb-2">Phone Number (Optional)</label>
+                      <input
+                        type="tel"
+                        name="phoneNumber"
+                        value={formData.phoneNumber}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                        placeholder="Enter your phone number"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
                     {/* Email Field */}
                     <div>
                       <label className="block text-gray-700 text-sm font-medium mb-2">

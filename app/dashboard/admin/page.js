@@ -32,6 +32,11 @@ export default function AdminDashboard() {
     if (status === 'unauthenticated') {
       router.push('/auth/login');
     }
+    // Load theme from localStorage
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      setDarkMode(savedTheme === 'dark');
+    }
   }, [status, router]);
 
   useEffect(() => {
