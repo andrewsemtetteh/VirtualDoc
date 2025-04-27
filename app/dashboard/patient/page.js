@@ -33,7 +33,15 @@ export default function PatientDashboard() {
   useEffect(() => {
     setMounted(true);
     const savedTheme = localStorage.getItem('theme');
+    const savedSection = localStorage.getItem('patientSection');
+    const savedCollapsed = localStorage.getItem('patientNavCollapsed');
     setDarkMode(savedTheme === 'dark');
+    if (savedSection) {
+      setActiveSection(savedSection);
+    }
+    if (savedCollapsed) {
+      setCollapsed(savedCollapsed === 'true');
+    }
   }, []);
 
   useEffect(() => {
@@ -60,11 +68,14 @@ export default function PatientDashboard() {
   }, []);
 
   const toggleSidebar = () => {
-    setCollapsed(!collapsed);
+    const newCollapsed = !collapsed;
+    setCollapsed(newCollapsed);
+    localStorage.setItem('patientNavCollapsed', newCollapsed.toString());
   };
 
   const handleNavigation = (section) => {
     setActiveSection(section);
+    localStorage.setItem('patientSection', section);
   };
 
   const handleNotificationClick = () => {

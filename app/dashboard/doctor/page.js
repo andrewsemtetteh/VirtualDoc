@@ -103,7 +103,15 @@ export default function DoctorDashboard() {
   useEffect(() => {
     setMounted(true);
     const savedTheme = localStorage.getItem('theme');
+    const savedSection = localStorage.getItem('doctorSection');
+    const savedCollapsed = localStorage.getItem('doctorNavCollapsed');
     setDarkMode(savedTheme === 'dark');
+    if (savedSection) {
+      setActiveSection(savedSection);
+    }
+    if (savedCollapsed) {
+      setCollapsed(savedCollapsed === 'true');
+    }
     // Log session data to help debug
     console.log('Session data:', session);
   }, [session]);
@@ -147,11 +155,14 @@ export default function DoctorDashboard() {
   }, [session]);
 
   const toggleSidebar = () => {
-    setCollapsed(!collapsed);
+    const newCollapsed = !collapsed;
+    setCollapsed(newCollapsed);
+    localStorage.setItem('doctorNavCollapsed', newCollapsed.toString());
   };
 
   const handleNavigation = (section) => {
     setActiveSection(section);
+    localStorage.setItem('doctorSection', section);
   };
 
   const handleNotificationClick = () => {

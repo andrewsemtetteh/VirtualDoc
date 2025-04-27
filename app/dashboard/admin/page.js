@@ -53,10 +53,18 @@ export default function AdminDashboard() {
     if (status === 'unauthenticated') {
       router.push('/auth/login');
     }
-    // Load theme from localStorage
+    // Load theme, section and navbar state from localStorage
     const savedTheme = localStorage.getItem('theme');
+    const savedSection = localStorage.getItem('adminSection');
+    const savedCollapsed = localStorage.getItem('adminNavCollapsed');
     if (savedTheme) {
       setDarkMode(savedTheme === 'dark');
+    }
+    if (savedSection) {
+      setCurrentSection(savedSection);
+    }
+    if (savedCollapsed) {
+      setCollapsed(savedCollapsed === 'true');
     }
   }, [status, router]);
 
@@ -181,7 +189,9 @@ export default function AdminDashboard() {
   ];
 
   const toggleSidebar = () => {
-    setCollapsed(!collapsed);
+    const newCollapsed = !collapsed;
+    setCollapsed(newCollapsed);
+    localStorage.setItem('adminNavCollapsed', newCollapsed.toString());
   };
 
   const toggleDarkMode = () => {
@@ -201,6 +211,7 @@ export default function AdminDashboard() {
   // Navigation handler
   const handleNavigation = (section) => {
     setCurrentSection(section);
+    localStorage.setItem('adminSection', section);
   };
 
   const handleStatusChange = (status) => {
