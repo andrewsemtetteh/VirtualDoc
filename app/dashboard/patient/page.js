@@ -4,8 +4,10 @@ import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Bell,
 import { Menu as HMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import Image from 'next/image';
+import { useSession } from 'next-auth/react';
 
 export default function PatientDashboard() {
+  const { data: session, status } = useSession();
   const [mounted, setMounted] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -497,6 +499,14 @@ export default function PatientDashboard() {
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
+
+  if (status === 'loading') {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
+  if (status === 'unauthenticated') {
+    return <div className="flex items-center justify-center min-h-screen">Please sign in to access the dashboard</div>;
+  }
 
   if (!mounted) return null;
 

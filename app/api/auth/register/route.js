@@ -5,7 +5,19 @@ import { sendVerificationEmail } from '@/lib/email';
 
 export async function POST(request) {
   try {
-    const { fullName, email, password, role, phoneNumber, specialization, licenseNumber, yearsOfExperience, dateOfBirth, gender } = await request.json();
+    const formData = await request.formData();
+    
+    // Extract form data
+    const fullName = formData.get('fullName');
+    const email = formData.get('email');
+    const password = formData.get('password');
+    const role = formData.get('role');
+    const phoneNumber = formData.get('phoneNumber');
+    const specialization = formData.get('specialization');
+    const licenseNumber = formData.get('licenseNumber');
+    const yearsOfExperience = formData.get('yearsOfExperience');
+    const dateOfBirth = formData.get('dateOfBirth');
+    const gender = formData.get('gender');
 
     // Validate required fields
     if (!fullName || !email || !password || !role) {

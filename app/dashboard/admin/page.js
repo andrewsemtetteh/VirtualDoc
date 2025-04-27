@@ -970,7 +970,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   
-                  {/* Doctor List */}
+                  {/* Doctor Directory Table */}
                   <div className={`p-6 rounded-lg ${
                     darkMode 
                       ? 'bg-gray-800 shadow-md' 
@@ -1151,6 +1151,241 @@ export default function AdminDashboard() {
                               ))}
                             </nav>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Doctor Verification Table */}
+                  <div className={`p-6 rounded-lg ${
+                    darkMode 
+                      ? 'bg-gray-800 shadow-md' 
+                      : 'bg-white shadow-md border border-gray-100 hover:shadow-lg'
+                  } transition-all duration-300 mt-6`}>
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-lg font-medium">Doctor Verification Requests</h3>
+                      <div className="flex space-x-2">
+                        <select className={`p-2 rounded border transition-all duration-300 ${
+                          darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white' 
+                            : 'bg-white border-gray-200'
+                        }`}>
+                          <option>All Requests</option>
+                          <option>Pending</option>
+                          <option>Approved</option>
+                          <option>Rejected</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                      <table className={`min-w-full transition-all duration-300 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-900'
+                      }`}>
+                        <thead>
+                          <tr className={`border-b transition-all duration-300 ${
+                            darkMode ? 'border-gray-700' : 'border-gray-200'
+                          }`}>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialty</th>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documents</th>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                            <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y transition-all duration-300 ${
+                          darkMode ? 'divide-gray-700' : 'divide-gray-200'
+                        }`}>
+                          {[
+                            { 
+                              name: 'Dr. James Wilson', 
+                              specialty: 'Cardiology', 
+                              documents: ['Medical License', 'ID Card', 'Certificates'],
+                              status: 'Pending',
+                              submitted: '2 days ago'
+                            },
+                            { 
+                              name: 'Dr. Maria Garcia', 
+                              specialty: 'Pediatrics', 
+                              documents: ['Medical License', 'ID Card'],
+                              status: 'Pending',
+                              submitted: '1 day ago'
+                            },
+                            { 
+                              name: 'Dr. Robert Chen', 
+                              specialty: 'Neurology', 
+                              documents: ['Medical License', 'ID Card', 'Certificates', 'References'],
+                              status: 'Approved',
+                              submitted: '5 days ago'
+                            },
+                            { 
+                              name: 'Dr. Sarah Thompson', 
+                              specialty: 'Dermatology', 
+                              documents: ['Medical License', 'ID Card'],
+                              status: 'Rejected',
+                              submitted: '3 days ago'
+                            },
+                            { 
+                              name: 'Dr. David Kim', 
+                              specialty: 'Orthopedics', 
+                              documents: ['Medical License', 'ID Card', 'Certificates'],
+                              status: 'Pending',
+                              submitted: '4 days ago'
+                            }
+                          ].map((doctor, index) => (
+                            <tr key={index} className={`transition-all duration-300 ${
+                              darkMode 
+                                ? index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'
+                                : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                            }`}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <img 
+                                    src={`/api/placeholder/${45 + index}/${45 + index}`} 
+                                    alt={doctor.name} 
+                                    className="w-10 h-10 rounded-full object-cover"
+                                  />
+                                  <div className="ml-4">
+                                    <div className="font-medium">{doctor.name}</div>
+                                    <div className={`text-sm ${
+                                      darkMode ? 'text-gray-400' : 'text-gray-500'
+                                    }`}>doctor{index + 1}@virtualdoc.com</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm">{doctor.specialty}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex flex-wrap gap-1">
+                                  {doctor.documents.map((doc, docIndex) => (
+                                    <span key={docIndex} className={`px-2 py-1 text-xs rounded-full ${
+                                      darkMode 
+                                        ? 'bg-gray-700 text-gray-300' 
+                                        : 'bg-gray-100 text-gray-600'
+                                    }`}>
+                                      {doc}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  doctor.status === 'Approved' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : doctor.status === 'Rejected'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {doctor.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {doctor.submitted}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div className="flex space-x-2">
+                                  <button
+                                    type="button"
+                                    className={`px-3 py-1 rounded-lg font-medium transition-all duration-300 ${
+                                      darkMode 
+                                        ? 'bg-green-700 hover:bg-green-800 text-white' 
+                                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                    }`}
+                                  >
+                                    View Profile
+                                  </button>
+                                  {doctor.status === 'Pending' && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        className={`px-3 py-1 rounded-lg font-medium transition-all duration-300 ${
+                                          darkMode 
+                                            ? 'bg-blue-700 hover:bg-blue-800 text-white' 
+                                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                        }`}
+                                      >
+                                        Approve
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className={`px-3 py-1 rounded-lg font-medium transition-all duration-300 ${
+                                          darkMode 
+                                            ? 'bg-red-700 hover:bg-red-800 text-white' 
+                                            : 'bg-red-100 text-red-700 hover:bg-red-200'
+                                        }`}
+                                      >
+                                        Reject
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className={`px-3 py-1 rounded-lg font-medium transition-all duration-300 ${
+                                          darkMode 
+                                            ? 'bg-yellow-700 hover:bg-yellow-800 text-white' 
+                                            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                        }`}
+                                      >
+                                        Request Info
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    {/* Pagination */}
+                    <div className={`flex items-center justify-between border-t px-4 py-3 sm:px-6 transition-all duration-300 ${
+                      darkMode ? 'border-gray-700' : 'border-gray-200'
+                    }`}>
+                      <div className="flex-1 flex justify-between sm:hidden">
+                        <button className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md transition-all duration-300 ${
+                          darkMode 
+                            ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600' 
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}>
+                          Previous
+                        </button>
+                        <button className={`ml-3 relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md transition-all duration-300 ${
+                          darkMode 
+                            ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600' 
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}>
+                          Next
+                        </button>
+                      </div>
+                      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>
+                            Showing <span className="font-medium">1</span> to <span className="font-medium">5</span> of <span className="font-medium">12</span> requests
+                          </p>
+                        </div>
+                        <div>
+                          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                            {['Previous', '1', '2', '3', 'Next'].map((page, index) => (
+                              <button
+                                key={page}
+                                className={`relative inline-flex items-center px-3 py-2 border text-sm font-medium transition-all duration-300 ${
+                                  darkMode
+                                    ? index === 1 
+                                      ? 'bg-gray-600 text-white border-gray-500' 
+                                      : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                                    : index === 1
+                                      ? 'bg-blue-50 text-blue-600 border-blue-500'
+                                      : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
+                                } ${
+                                  index === 0 ? 'rounded-l-md' : index === 4 ? 'rounded-r-md' : ''
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            ))}
+                          </nav>
                         </div>
                       </div>
                     </div>
