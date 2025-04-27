@@ -9,7 +9,7 @@ export const authOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        login: { label: "Email/Phone", type: "text" },
+        login: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
@@ -18,17 +18,12 @@ export const authOptions = {
           await dbConnect();
           console.log('Connected to database');
 
-          // Find user by email or phone number
-          const user = await User.findOne({
-            $or: [
-              { email: credentials.login },
-              { phoneNumber: credentials.login }
-            ]
-          });
+          // Find user by email
+          const user = await User.findOne({ email: credentials.login });
 
           if (!user) {
             console.log('No user found for:', credentials.login);
-            throw new Error('No user found with this email or phone number');
+            throw new Error('No user found with this email');
           }
 
           console.log('User found, verifying password...');

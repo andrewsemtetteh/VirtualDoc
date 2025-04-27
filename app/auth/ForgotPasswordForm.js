@@ -12,7 +12,7 @@ export default function ForgotPasswordForm() {
     otp: '',
     newPassword: '',
     confirmPassword: '',
-    contactType: 'email' // 'email' or 'phone'
+    contactType: 'email' // Remove phone option
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -98,47 +98,23 @@ export default function ForgotPasswordForm() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 {step === 1 && (
                   <>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 text-sm font-medium mb-2">Reset via</label>
-                      <div className="grid grid-cols-2 gap-3">
-                        {['email', 'phone'].map((type) => (
-                          <button
-                            key={type}
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, contactType: type }))}
-                            className={`py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
-                              formData.contactType === type 
-                                ? 'bg-green-800 text-white border-green-800' 
-                                : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
-                            }`}
-                          >
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
                     <div>
                       <label className="block text-gray-700 text-sm font-medium mb-2">
-                        {formData.contactType === 'email' ? 'Email Address' : 'Phone Number'}
+                        Email Address
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            {formData.contactType === 'email' ? (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                            ) : (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                            )}
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                           </svg>
                         </div>
                         <input
-                          type={formData.contactType === 'email' ? 'email' : 'tel'}
+                          type="email"
                           name="contact"
                           value={formData.contact}
                           onChange={handleChange}
                           className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                          placeholder={`Enter your ${formData.contactType}`}
+                          placeholder="Enter your email address"
                           required
                         />
                       </div>

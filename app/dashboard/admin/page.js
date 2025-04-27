@@ -1716,9 +1716,7 @@ export default function AdminDashboard() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className={`text-sm font-medium text-white`}>
-                      {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('') : 'AT'}
-                    </span>
+                    <User className="h-5 w-5 text-white" />
                   )}
                 </div>
                 <div className="text-left hidden md:block">

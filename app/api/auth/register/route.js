@@ -14,17 +14,12 @@ export async function POST(req) {
     console.log('Registration attempt for:', formData.email);
 
     // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [
-        { email: formData.email },
-        { phoneNumber: formData.phoneNumber }
-      ]
-    });
+    const existingUser = await User.findOne({ email: formData.email });
 
     if (existingUser) {
       console.log('Registration failed: User already exists');
       return NextResponse.json(
-        { error: 'User with this email or phone number already exists' },
+        { error: 'User with this email already exists' },
         { status: 400 }
       );
     }
@@ -36,7 +31,6 @@ export async function POST(req) {
     const userData = {
       fullName: formData.fullName,
       email: formData.email,
-      phoneNumber: formData.phoneNumber,
       password: hashedPassword,
       role: formData.role,
     };
@@ -82,7 +76,7 @@ export async function POST(req) {
     // Handle specific error cases
     if (error.code === 11000) {
       return NextResponse.json(
-        { error: 'This email or phone number is already registered' },
+        { error: 'This email is already registered' },
         { status: 400 }
       );
     }
