@@ -7,7 +7,7 @@ import {
   BarChart, Users, Calendar, FileText, 
   Menu, X, Search, Bell, Sun, Moon,
   ChevronDown, LayoutDashboard, ShoppingCart, User, Settings,
-  LogOut
+  LogOut, UserPlus, UserCheck
 } from 'lucide-react';
 import { Menu as HMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
@@ -46,6 +46,18 @@ export default function AdminDashboard() {
   
   const notificationsRef = useRef(null);
   const profileRef = useRef(null);
+
+  const [patientStats, setPatientStats] = useState({
+    totalPatients: 0,
+    newPatientsThisMonth: 0,
+    activePatients: 0,
+    upcomingAppointments: 0
+  });
+  const [patients, setPatients] = useState([]);
+  const [patientPage, setPatientPage] = useState(1);
+  const [patientTotalPages, setPatientTotalPages] = useState(1);
+  const [patientStatus, setPatientStatus] = useState('all');
+  const [patientSearch, setPatientSearch] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -98,6 +110,13 @@ export default function AdminDashboard() {
     }
   }, [currentSection, selectedStatus]);
 
+  useEffect(() => {
+    if (currentSection === 'patients') {
+      fetchPatientStats();
+      fetchPatients();
+    }
+  }, [currentSection]);
+
   const fetchApprovedDoctors = async () => {
     try {
       setLoadingDoctors(true);
@@ -134,6 +153,32 @@ export default function AdminDashboard() {
       setDoctorError(err.message);
     } finally {
       setLoadingDoctors(false);
+    }
+  };
+
+  const fetchPatientStats = async () => {
+    try {
+      const response = await fetch('/api/admin/patients/stats');
+      if (response.ok) {
+        const data = await response.json();
+        setPatientStats(data);
+      }
+    } catch (error) {
+      console.error('Error fetching patient stats:', error);
+    }
+  };
+
+  const fetchPatients = async (page = 1, status = 'all', search = '') => {
+    try {
+      const response = await fetch(`/api/admin/patients?page=${page}&limit=10&status=${status}&search=${search}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPatients(data.patients);
+        setPatientTotalPages(data.totalPages);
+        setPatientPage(data.page);
+      }
+    } catch (error) {
+      console.error('Error fetching patients:', error);
     }
   };
 
@@ -598,82 +643,52 @@ export default function AdminDashboard() {
                         <Users size={24} className="text-blue-500" />
                       </div>
                       <div className="ml-4">
-                        <h2 className="text-2xl font-bold">1,259</h2>
+                        <h2 className="text-2xl font-bold">{patientStats.totalPatients}</h2>
                         <p className="text-sm text-gray-500">Total Patients</p>
-                      </div>
-                      <div className="ml-auto text-green-500 flex items-center">
-                        <span>4.6%</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
                       </div>
                     </div>
                   </div>
                   
-                  {/* New Patients */}
+                  {/* New Patients This Month */}
                   <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                     <div className="flex items-center">
                       <div className="bg-green-100 p-3 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
+                        <UserPlus size={24} className="text-green-500" />
                       </div>
                       <div className="ml-4">
-                        <h2 className="text-2xl font-bold">87</h2>
-                        <p className="text-sm text-gray-500">New this month</p>
-                      </div>
-                      <div className="ml-auto text-green-500 flex items-center">
-                        <span>12.3%</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
+                        <h2 className="text-2xl font-bold">{patientStats.newPatientsThisMonth}</h2>
+                        <p className="text-sm text-gray-500">New This Month</p>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Active Treatment */}
+                  {/* Active Patients */}
                   <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                     <div className="flex items-center">
                       <div className="bg-purple-100 p-3 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
+                        <UserCheck size={24} className="text-purple-500" />
                       </div>
                       <div className="ml-4">
-                        <h2 className="text-2xl font-bold">463</h2>
-                        <p className="text-sm text-gray-500">Active Treatment</p>
-                      </div>
-                      <div className="ml-auto text-yellow-500 flex items-center">
-                        <span>0.8%</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
+                        <h2 className="text-2xl font-bold">{patientStats.activePatients}</h2>
+                        <p className="text-sm text-gray-500">Active Patients</p>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Insurance Coverage */}
+                  {/* Upcoming Appointments */}
                   <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                     <div className="flex items-center">
-                      <div className="bg-red-100 p-3 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
+                      <div className="bg-yellow-100 p-3 rounded-full">
+                        <Calendar size={24} className="text-yellow-500" />
                       </div>
                       <div className="ml-4">
-                        <h2 className="text-2xl font-bold">78%</h2>
-                        <p className="text-sm text-gray-500">Insurance Coverage</p>
-                      </div>
-                      <div className="ml-auto text-red-500 flex items-center">
-                        <span>-1.2%</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
+                        <h2 className="text-2xl font-bold">{patientStats.upcomingAppointments}</h2>
+                        <p className="text-sm text-gray-500">Upcoming Appointments</p>
                       </div>
                     </div>
                   </div>
                 </div>
-                  
+                
                 {/* Patient Records Table */}
                 <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mb-6`}>
                   <div className="flex justify-between items-center mb-6">
@@ -685,12 +700,24 @@ export default function AdminDashboard() {
                           type="text" 
                           placeholder="Search patients" 
                           className={`ml-2 bg-transparent focus:outline-none w-40 ${darkMode ? 'placeholder-gray-400' : 'placeholder-gray-500'}`}
+                          value={patientSearch}
+                          onChange={(e) => {
+                            setPatientSearch(e.target.value);
+                            fetchPatients(1, patientStatus, e.target.value);
+                          }}
                         />
                       </div>
-                      <select className={`p-2 rounded border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
-                        <option>All Patients</option>
-                        <option>Active Patients</option>
-                        <option>Inactive Patients</option>
+                      <select 
+                        className={`p-2 rounded border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}
+                        value={patientStatus}
+                        onChange={(e) => {
+                          setPatientStatus(e.target.value);
+                          fetchPatients(1, e.target.value, patientSearch);
+                        }}
+                      >
+                        <option value="all">All Patients</option>
+                        <option value="active">Active Patients</option>
+                        <option value="inactive">Inactive Patients</option>
                       </select>
                     </div>
                   </div>
@@ -708,61 +735,27 @@ export default function AdminDashboard() {
                           <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {[
-                          {
-                            name: "Jessica Williams",
-                            id: "PT-20245",
-                            phone: "+1 (555) 987-3456",
-                            lastVisit: "Mar 28, 2025",
-                            status: "Active"
-                          },
-                          {
-                            name: "Thomas Anderson",
-                            id: "PT-19872",
-                            phone: "+1 (555) 456-7890",
-                            lastVisit: "Mar 15, 2025",
-                            status: "Active"
-                          },
-                          {
-                            name: "Sarah Martinez",
-                            id: "PT-18456",
-                            phone: "+1 (555) 234-5678",
-                            lastVisit: "Feb 22, 2025",
-                            status: "Inactive"
-                          },
-                          {
-                            name: "David Thompson",
-                            id: "PT-15678",
-                            phone: "+1 (555) 345-6789",
-                            lastVisit: "Mar 30, 2025",
-                            status: "Active"
-                          },
-                          {
-                            name: "Jennifer Clark",
-                            id: "PT-14523",
-                            phone: "+1 (555) 567-8901",
-                            lastVisit: "Jan 05, 2025",
-                            status: "Inactive"
-                          },
-                        ].map((patient, index) => (
-                          <tr key={index} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                      <tbody>
+                        {patients.map((patient) => (
+                          <tr key={patient._id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
                             <td className="py-4 px-3 md:px-6">
                               <div className="flex items-center">
                                 <div className={`w-8 h-8 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
                                   <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    {patient.name.split(' ').map(n => n[0]).join('')}
+                                    {patient.fullName?.split(' ').map(n => n[0]).join('') || 'P'}
                                   </span>
                                 </div>
-                                <span className="ml-3">{patient.name}</span>
+                                <span className="ml-3">{patient.fullName}</span>
                               </div>
                             </td>
-                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.id}</td>
+                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient._id}</td>
                             <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.phone}</td>
-                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.lastVisit}</td>
+                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">
+                              {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'N/A'}
+                            </td>
                             <td className="py-4 px-3 md:px-6">
                               <span className={`px-2 py-1 rounded text-xs ${
-                                patient.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                patient.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                               }`}>
                                 {patient.status}
                               </span>
@@ -796,22 +789,34 @@ export default function AdminDashboard() {
                   {/* Pagination */}
                   <div className="flex flex-col sm:flex-row justify-between items-center mt-4 md:mt-6 space-y-3 sm:space-y-0">
                     <div className="text-xs md:text-sm text-gray-500">
-                      Showing 1 to 5 of 124 patients
+                      Showing {patients.length > 0 ? (patientPage - 1) * 10 + 1 : 0} to {Math.min(patientPage * 10, patientStats.totalPatients)} of {patientStats.totalPatients} patients
                     </div>
                     <div className="flex space-x-1">
-                      <button className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
+                      <button 
+                        className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
+                        onClick={() => fetchPatients(patientPage - 1, patientStatus, patientSearch)}
+                        disabled={patientPage === 1}
+                      >
                         Previous
                       </button>
-                      <button className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'}`}>
-                        1
-                      </button>
-                      <button className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
-                        2
-                      </button>
-                      <button className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
-                        3
-                      </button>
-                      <button className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
+                      {Array.from({ length: patientTotalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${
+                            page === patientPage
+                              ? darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
+                              : darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
+                          }`}
+                          onClick={() => fetchPatients(page, patientStatus, patientSearch)}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                      <button 
+                        className={`px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
+                        onClick={() => fetchPatients(patientPage + 1, patientStatus, patientSearch)}
+                        disabled={patientPage === patientTotalPages}
+                      >
                         Next
                       </button>
                     </div>
