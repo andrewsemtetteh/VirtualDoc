@@ -1,78 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
+import axios from 'axios';
 
 export function useDoctors() {
   const [doctors, setDoctors] = useState([]);
-  const [specialties, setSpecialties] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
-    specialty: 'All Specialties',
-    search: ''
-  });
+  const [specialties, setSpecialties] = useState([]);
 
-  // Fetch specialties
-  useEffect(() => {
-    const fetchSpecialties = async () => {
-      try {
-        const response = await fetch('/api/doctors/specialties');
-        if (!response.ok) {
-          throw new Error('Failed to fetch specialties');
-        }
-        const data = await response.json();
-        setSpecialties(data.specializations);
-      } catch (error) {
-        console.error('Error fetching specialties:', error);
-        setError(error.message);
+  const fetchDoctors = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await axios.get('/api/doctors');
+      
+      if (response.data && Array.isArray(response.data.doctors)) {
+        setDoctors(response.data.doctors);
+        
+        // Extract unique specialties
+        const uniqueSpecialties = [...new Set(
+          response.data.doctors.map(doctor => doctor.specialization)
+        )].filter(Boolean);
+        
+        setSpecialties(uniqueSpecialties);
+      } else {
+        throw new Error('Invalid response format');
       }
-    };
-
-    fetchSpecialties();
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
+      setError(err.response?.data?.error || 'Failed to fetch doctors');
+      setDoctors([]);
+      setSpecialties([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
-
-  // Fetch doctors
-  useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/doctors');
-        if (!response.ok) {
-          throw new Error('Failed to fetch doctors');
-        }
-        const data = await response.json();
-        setDoctors(data);
-      } catch (error) {
-        console.error('Error fetching doctors:', error);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDoctors();
-  }, []);
-
-  // Filter doctors
-  const filteredDoctors = doctors.filter(doctor => {
-    const matchesSpecialty = filters.specialty === 'All Specialties' || doctor.specialization === filters.specialty;
-    const matchesSearch = !filters.search || 
-      doctor.fullName.toLowerCase().includes(filters.search.toLowerCase()) ||
-      doctor.specialization.toLowerCase().includes(filters.search.toLowerCase());
-    return matchesSpecialty && matchesSearch;
-  });
-
-  const updateFilters = (newFilters) => {
-    setFilters(prev => ({
-      ...prev,
-      ...newFilters
-    }));
-  };
 
   return {
-    doctors: filteredDoctors,
-    specialties,
+    doctors,
     loading,
     error,
-    filters,
-    updateFilters
+    specialties,
+    fetchDoctors
   };
 } 

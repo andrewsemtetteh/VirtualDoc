@@ -14,7 +14,9 @@ export default function DoctorVerification({ darkMode }) {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [counts, setCounts] = useState({
     pending: 0,
-    rejected: 0
+    rejected: 0,
+    total: 0,
+    currentFilter: 0
   });
 
   useEffect(() => {
@@ -27,17 +29,12 @@ export default function DoctorVerification({ darkMode }) {
       const response = await fetch(`/api/admin/doctors/pending?status=${status === 'all' ? 'pending' : status}`);
       if (!response.ok) throw new Error('Failed to fetch doctors');
       const data = await response.json();
-      let filteredDoctors;
-      if (status === 'all') {
-        // Show both pending and rejected
-        filteredDoctors = data.doctors.filter(d => d.status === 'pending' || d.status === 'rejected');
-      } else {
-        filteredDoctors = data.doctors.filter(d => d.status === status);
-      }
-      setDoctors(filteredDoctors);
+      setDoctors(data.doctors);
       setCounts({
         pending: data.counts.pending,
-        rejected: data.counts.rejected
+        rejected: data.counts.rejected,
+        total: data.counts.total,
+        currentFilter: data.counts.currentFilter
       });
     } catch (err) {
       setError(err.message);
@@ -111,7 +108,10 @@ export default function DoctorVerification({ darkMode }) {
         <div>
           <h3 className="text-lg font-medium">Doctor Verification Requests</h3>
           <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Showing {selectedStatus} doctors ({counts[selectedStatus]})
+            {selectedStatus === 'all' 
+              ? `Showing all verification requests (${counts.currentFilter})`
+              : `Showing ${selectedStatus} doctors (${counts.currentFilter})`
+            }
           </p>
         </div>
         <div className="flex items-center space-x-4">
@@ -186,7 +186,11 @@ export default function DoctorVerification({ darkMode }) {
                             alt={doctor.fullName}
                             width={40}
                             height={40}
-                            className="object-cover"
+                            className="object-cover w-full h-full"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.classList.add('bg-gray-200');
+                            }}
                           />
                         ) : (
                           <span className={`text-sm ${darkMode ? 'text-gray-600' : 'text-gray-500'}`}>

@@ -11,25 +11,45 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
+    const page = parseInt(searchParams.get('page')) || 1;
+    const limit = parseInt(searchParams.get('limit')) || 10;
+
     const { db } = await connectToDatabase();
 
-    // Get only active doctors
+    // Build query for approved doctors
+    const query = {
+      role: 'doctor',
+      status: 'active'
+    };
+
+    // Add search if provided
+    if (search) {
+      query.$or = [
+        { fullName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { specialization: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Get total count for pagination
+    const total = await db.collection('users').countDocuments(query);
+
+    // Get doctors with pagination
     const doctors = await db.collection('users')
-      .find({ 
-        role: 'doctor',
-        status: 'active'
-      })
+      .find(query)
       .project({ password: 0 }) // Exclude password
       .sort({ createdAt: -1 }) // Most recent first
+      .skip((page - 1) * limit)
+      .limit(limit)
       .toArray();
-
-    // Get count of active doctors
-    const approvedCount = await db.collection('users')
-      .countDocuments({ role: 'doctor', status: 'active' });
 
     return NextResponse.json({
       doctors,
-      count: approvedCount
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
     });
   } catch (error) {
     console.error('Get approved doctors error:', error);

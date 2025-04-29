@@ -210,7 +210,7 @@ export default function RegisterForm() {
                 type="date"
                 value={formData.dateOfBirth}
                 onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm text-gray-900"
               />
             </div>
             <div>
@@ -218,7 +218,7 @@ export default function RegisterForm() {
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData({...formData, gender: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm text-gray-900"
               >
                 <option value="">Select gender</option>
                 <option value="male">Male</option>
@@ -236,7 +236,7 @@ export default function RegisterForm() {
                 required
                 value={formData.specialization}
                 onChange={(e) => setFormData({...formData, specialization: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm text-gray-900"
               >
                 <option value="">Select specialization</option>
                 {specializations.map((specialization) => (
@@ -253,7 +253,7 @@ export default function RegisterForm() {
                 required
                 value={formData.licenseNumber}
                 onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm text-gray-900"
                 placeholder="Your license number"
               />
             </div>
@@ -263,7 +263,7 @@ export default function RegisterForm() {
                 type="number"
                 value={formData.yearsOfExperience}
                 onChange={(e) => setFormData({...formData, yearsOfExperience: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm text-gray-900"
                 placeholder="Years of experience"
               />
             </div>
@@ -274,7 +274,7 @@ export default function RegisterForm() {
                   type="file"
                   accept=".pdf,.doc,.docx"
                   onChange={handleLicenseDocumentChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none text-sm text-gray-900"
                 />
                 {licenseDocument && (
                   <p className="mt-2 text-sm text-green-600">Document selected: {licenseDocument.name}</p>
@@ -393,7 +393,7 @@ export default function RegisterForm() {
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-gray-900"
                     placeholder="Enter your full name"
                     required
                   />
@@ -413,7 +413,7 @@ export default function RegisterForm() {
                         name="phoneNumber"
                         value={formData.phoneNumber}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-gray-900"
                         placeholder="Enter your phone number"
                       />
                     </div>
@@ -437,7 +437,7 @@ export default function RegisterForm() {
                           name="email"
                           value={formData.email}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-gray-900"
                           placeholder="Enter your email"
                           required
                         />
@@ -464,7 +464,7 @@ export default function RegisterForm() {
                           name="password"
                           value={formData.password}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-gray-900"
                           placeholder="Create a password"
                           required
                         />
@@ -485,7 +485,7 @@ export default function RegisterForm() {
                           name="confirmPassword"
                           value={formData.confirmPassword}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-gray-900"
                           placeholder="Confirm your password"
                           required
                         />

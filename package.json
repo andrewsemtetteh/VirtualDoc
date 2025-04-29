@@ -27,6 +27,7 @@
     "next": "^15.2.2",
     "next-auth": "^4.24.11",
     "next-connect": "^1.0.0",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.10.1",
     "prisma": "^6.6.0",
     "react": "^19.0.0",

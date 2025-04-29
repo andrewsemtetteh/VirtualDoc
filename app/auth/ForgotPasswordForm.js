@@ -113,7 +113,7 @@ export default function ForgotPasswordForm() {
                           name="contact"
                           value={formData.contact}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-gray-900"
                           placeholder="Enter your email address"
                           required
                         />
@@ -136,7 +136,7 @@ export default function ForgotPasswordForm() {
                         name="otp"
                         value={formData.otp}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-gray-900"
                         placeholder="Enter the OTP sent to you"
                         required
                       />
@@ -159,7 +159,7 @@ export default function ForgotPasswordForm() {
                           name="newPassword"
                           value={formData.newPassword}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-gray-900"
                           placeholder="Enter new password"
                           required
                         />
@@ -179,7 +179,7 @@ export default function ForgotPasswordForm() {
                           name="confirmPassword"
                           value={formData.confirmPassword}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-gray-900"
                           placeholder="Confirm new password"
                           required
                         />

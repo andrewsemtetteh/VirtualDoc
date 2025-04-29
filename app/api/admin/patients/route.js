@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { connectToDatabase } from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/db';
+import User from '@/models/User';
 
 export async function GET(request) {
   try {
@@ -17,7 +18,7 @@ export async function GET(request) {
     const status = searchParams.get('status') || 'all';
     const search = searchParams.get('search') || '';
 
-    const { db } = await connectToDatabase();
+    await connectToDatabase();
     const skip = (page - 1) * limit;
 
     // Build query
@@ -31,20 +32,19 @@ export async function GET(request) {
       query.$or = [
         { fullName: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } }
+        { phoneNumber: { $regex: search, $options: 'i' } }
       ];
     }
 
     // Get total count
-    const total = await db.collection('users').countDocuments(query);
+    const total = await User.countDocuments(query);
 
     // Get patients
-    const patients = await db.collection('users')
-      .find(query)
+    const patients = await User.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .toArray();
+      .select('-password'); // Exclude password field
 
     return NextResponse.json({
       patients,

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
-import Appointment from '@/models/Appointment';
+import { connectToDatabase } from '@/lib/mongodb';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getIO } from '@/lib/socket';
@@ -15,7 +14,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
+    const { db } = await connectToDatabase();
     
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -27,9 +26,7 @@ export async function GET(request) {
       query.status = status;
     }
     
-    const appointments = await Appointment.find(query)
-      .populate('doctorId', 'name specialty profilePicture')
-      .sort({ date: 1 });
+    const appointments = await db.collection('appointments').find(query).toArray();
     
     return NextResponse.json(appointments);
   } catch (error) {
@@ -44,41 +41,99 @@ export async function GET(request) {
 // Create a new appointment
 export async function POST(request) {
   try {
+    // Validate session
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
-    
+    // Get request body
     const body = await request.json();
-    const { doctorId, date, time } = body;
-    
-    // Generate video link (you might want to use a service like Daily.co or similar)
-    const videoLink = `https://your-video-service.com/${Date.now()}`;
-    
-    const appointment = new Appointment({
-      patientId: session.user.id,
-      doctorId,
+    const { doctorId, date, time, reason, notes } = body;
+
+    // Validate required fields
+    if (!doctorId || !date || !time || !reason) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Connect to database
+    const { db } = await connectToDatabase();
+
+    // Validate doctor exists
+    const doctor = await db.collection('users').findOne({ 
+      _id: new ObjectId(doctorId),
+      role: 'doctor'
+    });
+
+    if (!doctor) {
+      return NextResponse.json(
+        { error: 'Doctor not found' },
+        { status: 404 }
+      );
+    }
+
+    // Create appointment object
+    const appointment = {
+      patientId: new ObjectId(session.user.id),
+      doctorId: new ObjectId(doctorId),
       date,
       time,
-      videoLink,
-      status: 'scheduled'
+      reason,
+      notes: notes || null,
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    // Insert appointment
+    const result = await db.collection('appointments').insertOne(appointment);
+
+    // Get the saved appointment
+    const savedAppointment = await db.collection('appointments').findOne(
+      { _id: result.insertedId },
+      {
+        projection: {
+          _id: 1,
+          patientId: 1,
+          doctorId: 1,
+          date: 1,
+          time: 1,
+          reason: 1,
+          notes: 1,
+          status: 1,
+          createdAt: 1,
+          updatedAt: 1
+        }
+      }
+    );
+
+    // Notify doctor about new appointment
+    const io = getIO();
+    if (io) {
+      io.to(`doctor_${doctorId}`).emit('new_appointment', {
+        appointment: savedAppointment,
+        message: 'New appointment request received'
+      });
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      appointment: savedAppointment 
     });
-    
-    await appointment.save();
-    
-    return NextResponse.json(appointment);
+
   } catch (error) {
     console.error('Error creating appointment:', error);
     return NextResponse.json(
-      { error: 'Failed to create appointment' },
+      { error: 'Failed to create appointment', details: error.message },
       { status: 500 }
     );
   }
 }
 
-// Update an appointment
+// Update appointment (reschedule, accept, reject)
 export async function PATCH(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -86,53 +141,117 @@ export async function PATCH(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, status, rescheduledFor } = await request.json();
-
-    if (!id || !status) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    const { db } = await connectToDatabase();
+    
+    const { appointmentId, action, newDate, newTime, reason } = await request.json();
+    
+    const appointment = await db.collection('appointments').findOne(
+      { _id: new ObjectId(appointmentId) },
+      {
+        projection: {
+          _id: 1,
+          patientId: 1,
+          doctorId: 1,
+          date: 1,
+          time: 1,
+          reason: 1,
+          status: 1,
+          rescheduleHistory: 1
+        }
+      }
+    );
+    if (!appointment) {
+      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
     }
 
-    const { db } = await connectToDatabase();
+    // Check if user has permission to modify this appointment
+    if (session.user.role === 'doctor' && appointment.doctorId.toString() !== session.user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+    if (session.user.role === 'patient' && appointment.patientId.toString() !== session.user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
-    const update = {
-      status,
-      updatedAt: new Date(),
-      ...(rescheduledFor && { scheduledFor: new Date(rescheduledFor) })
-    };
+    let update = {};
+    let notificationMessage = '';
 
-    const result = await db.collection('appointments').findOneAndUpdate(
-      { _id: new ObjectId(id) },
+    switch (action) {
+      case 'accept':
+        update.status = 'accepted';
+        notificationMessage = 'Your appointment has been accepted';
+        break;
+      case 'reject':
+        update.status = 'rejected';
+        notificationMessage = 'Your appointment has been rejected';
+        break;
+      case 'reschedule':
+        if (!newDate || !newTime || !reason) {
+          return NextResponse.json({ error: 'Missing required fields for rescheduling' }, { status: 400 });
+        }
+        
+        // Add to reschedule history
+        const rescheduleEntry = {
+          oldDate: appointment.date,
+          oldTime: appointment.time,
+          newDate,
+          newTime,
+          reason,
+          changedBy: session.user.role
+        };
+        
+        update = {
+          date: newDate,
+          time: newTime,
+          rescheduleReason: reason,
+          status: 'rescheduled',
+          $push: { rescheduleHistory: rescheduleEntry }
+        };
+        
+        notificationMessage = `Appointment has been rescheduled to ${newDate} at ${newTime}`;
+        break;
+      default:
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    }
+
+    const updatedAppointment = await db.collection('appointments').findOneAndUpdate(
+      { _id: new ObjectId(appointmentId) },
       { $set: update },
-      { returnDocument: 'after' }
+      {
+        projection: {
+          _id: 1,
+          patientId: 1,
+          doctorId: 1,
+          date: 1,
+          time: 1,
+          reason: 1,
+          status: 1,
+          rescheduleHistory: 1
+        },
+        returnDocument: 'after'
+      }
     );
 
-    if (!result.value) {
-      return NextResponse.json(
-        { error: 'Appointment not found' },
-        { status: 404 }
-      );
+    // Notify the other party
+    const io = getIO();
+    if (io) {
+      const targetUserId = session.user.role === 'doctor' 
+        ? appointment.patientId 
+        : appointment.doctorId;
+      
+      io.to(`user_${targetUserId}`).emit('appointment_update', {
+        appointment: updatedAppointment.value,
+        message: notificationMessage
+      });
     }
 
-    // Send real-time notification to relevant user
-    const io = getIO();
-    const notifyUserId = session.user.id === result.value.patientId
-      ? result.value.doctorId
-      : result.value.patientId;
-
-    io.to(notifyUserId).emit('appointment_update', {
-      id,
-      status,
-      rescheduledFor
+    return NextResponse.json({ 
+      success: true, 
+      appointment: updatedAppointment.value 
     });
-
-    return NextResponse.json(result.value);
   } catch (error) {
-    console.error('Update appointment error:', error);
+    console.error('Error updating appointment:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to update appointment' },
       { status: 500 }
     );
   }

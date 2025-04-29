@@ -17,14 +17,10 @@ export async function GET(request) {
     const { db } = await connectToDatabase();
 
     // Build query based on status filter
-    let query = { role: 'doctor' };
-    
-    if (status === 'all') {
-      // Show both pending and rejected
-      query.status = { $in: ['pending', 'rejected'] };
-    } else {
-      query.status = status;
-    }
+    let query = { 
+      role: 'doctor',
+      status: status === 'all' ? { $in: ['pending', 'rejected'] } : status
+    };
 
     // Get doctors based on filter
     const doctors = await db.collection('users')
@@ -35,15 +31,29 @@ export async function GET(request) {
 
     // Get counts for pending and rejected
     const [pendingCount, rejectedCount] = await Promise.all([
-      db.collection('users').countDocuments({ role: 'doctor', status: 'pending' }),
-      db.collection('users').countDocuments({ role: 'doctor', status: 'rejected' })
+      db.collection('users').countDocuments({ 
+        role: 'doctor', 
+        status: 'pending'
+      }),
+      db.collection('users').countDocuments({ 
+        role: 'doctor', 
+        status: 'rejected'
+      })
     ]);
+
+    // Calculate total count for 'all' status
+    const totalCount = pendingCount + rejectedCount;
+
+    // Get the count of doctors in the current filter
+    const currentFilterCount = doctors.length;
 
     return NextResponse.json({
       doctors,
       counts: {
         pending: pendingCount,
-        rejected: rejectedCount
+        rejected: rejectedCount,
+        total: totalCount,
+        currentFilter: currentFilterCount
       }
     });
   } catch (error) {

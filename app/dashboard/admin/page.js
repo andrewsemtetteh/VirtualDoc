@@ -30,9 +30,11 @@ export default function AdminDashboard() {
   const [approvedDoctors, setApprovedDoctors] = useState([]);
   const [pendingDoctors, setPendingDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
+  const [loadingPatients, setLoadingPatients] = useState(false);
   const [doctorError, setDoctorError] = useState(null);
   const [doctorSearch, setDoctorSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [actionInProgress, setActionInProgress] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectionModal, setShowRejectionModal] = useState(false);
@@ -40,9 +42,10 @@ export default function AdminDashboard() {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [counts, setCounts] = useState({
     pending: 0,
-    rejected: 0
+    rejected: 0,
+    total: 0
   });
-  const doctorsPerPage = 5;
+  const doctorsPerPage = 10;
   
   const notificationsRef = useRef(null);
   const profileRef = useRef(null);
@@ -61,6 +64,7 @@ export default function AdminDashboard() {
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [suspensionReason, setSuspensionReason] = useState('');
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     setMounted(true);
@@ -107,26 +111,45 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (currentSection === 'doctors') {
+    if (currentSection === 'doctors' || currentSection === 'dashboard') {
       fetchApprovedDoctors();
-      fetchPendingDoctors(selectedStatus);
+      fetchPendingDoctors();
     }
-  }, [currentSection, selectedStatus]);
+  }, [currentSection]);
 
   useEffect(() => {
     if (currentSection === 'patients') {
       fetchPatientStats();
-      fetchPatients();
+      fetchPatients(patientPage, patientStatus, patientSearch);
+    }
+  }, [currentSection, patientPage, patientStatus, patientSearch]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch('/api/admin/notifications');
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data.notifications);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
+    if (currentSection === 'dashboard') {
+      fetchNotifications();
     }
   }, [currentSection]);
 
   const fetchApprovedDoctors = async () => {
     try {
       setLoadingDoctors(true);
-      const response = await fetch('/api/admin/doctors/approved');
+      const response = await fetch(`/api/admin/doctors/approved?page=${currentPage}&limit=${doctorsPerPage}&search=${doctorSearch}`);
       if (!response.ok) throw new Error('Failed to fetch approved doctors');
       const data = await response.json();
       setApprovedDoctors(data.doctors);
+      setTotalPages(data.totalPages);
     } catch (err) {
       setDoctorError(err.message);
     } finally {
@@ -137,23 +160,26 @@ export default function AdminDashboard() {
   const fetchPendingDoctors = async (status = 'all') => {
     try {
       setLoadingDoctors(true);
-      const response = await fetch(`/api/admin/doctors/pending?status=${status === 'all' ? 'pending' : status}`);
+      const response = await fetch('/api/admin/doctors/pending');
       if (!response.ok) throw new Error('Failed to fetch pending doctors');
       const data = await response.json();
-      let filteredDoctors;
-      if (status === 'all') {
-        // Show both pending and rejected
-        filteredDoctors = data.doctors.filter(d => d.status === 'pending' || d.status === 'rejected');
-      } else {
-        filteredDoctors = data.doctors.filter(d => d.status === status);
-      }
-      setPendingDoctors(filteredDoctors);
+      
+      // Update pending doctors list
+      const pendingDocs = data.doctors.filter(d => d.status === 'pending');
+      const rejectedDocs = data.doctors.filter(d => d.status === 'rejected');
+      
+      setPendingDoctors(status === 'all' ? [...pendingDocs, ...rejectedDocs] : 
+                        status === 'pending' ? pendingDocs : rejectedDocs);
+
+      // Update counts
       setCounts({
-        pending: data.counts.pending,
-        rejected: data.counts.rejected
+        pending: pendingDocs.length,
+        rejected: rejectedDocs.length,
+        total: data.doctors.length
       });
     } catch (err) {
       setDoctorError(err.message);
+      console.error('Error fetching pending doctors:', err);
     } finally {
       setLoadingDoctors(false);
     }
@@ -173,15 +199,20 @@ export default function AdminDashboard() {
 
   const fetchPatients = async (page = 1, status = 'all', search = '') => {
     try {
+      setLoadingPatients(true);
       const response = await fetch(`/api/admin/patients?page=${page}&limit=10&status=${status}&search=${search}`);
       if (response.ok) {
         const data = await response.json();
         setPatients(data.patients);
         setPatientTotalPages(data.totalPages);
-        setPatientPage(data.page);
+        setPatientPage(page);
+        setPatientStatus(status);
+        setPatientSearch(search);
       }
     } catch (error) {
       console.error('Error fetching patients:', error);
+    } finally {
+      setLoadingPatients(false);
     }
   };
 
@@ -254,19 +285,6 @@ export default function AdminDashboard() {
     setShowRejectionModal(true);
   };
 
-  const notifications = [
-    {
-      title: "Appointment Reminder",
-      message: "Your appointment with Dr. Smith is tomorrow at 2:00 PM",
-      time: "2 hours ago"
-    },
-    {
-      title: "New Prescription",
-      message: "Dr. Davis has uploaded a new prescription",
-      time: "1 day ago"
-    }
-  ];
-
   const toggleSidebar = () => {
     const newCollapsed = !collapsed;
     setCollapsed(newCollapsed);
@@ -283,7 +301,7 @@ export default function AdminDashboard() {
   };
 
   const toggleNotifications = () => {
-    setIsNotificationsOpen(!isNotificationsOpen);
+    setNotificationsOpen(!notificationsOpen);
     if (isProfileOpen) setIsProfileOpen(false);
   };
 
@@ -796,7 +814,7 @@ export default function AdminDashboard() {
                           <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Patient Name</th>
                           <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">ID</th>
                           <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                          <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Last Visit</th>
+                          <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
                           <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Status</th>
                           <th className="py-3 px-3 md:px-6 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -823,9 +841,9 @@ export default function AdminDashboard() {
                               </div>
                             </td>
                             <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.patientId || 'PT-0001'}</td>
-                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.phone || 'No Phone'}</td>
+                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.phoneNumber || 'No Phone'}</td>
                             <td className="py-4 px-3 md:px-6 text-sm md:text-base">
-                              {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'N/A'}
+                              {patient.lastLogin ? new Date(patient.lastLogin).toLocaleDateString() : 'Never'}
                             </td>
                             <td className="py-4 px-3 md:px-6">
                               <span className={`px-2 py-1 rounded text-xs ${
@@ -1412,28 +1430,39 @@ export default function AdminDashboard() {
                             darkMode ? 'divide-gray-700' : 'divide-gray-200'
                           }`}>
                             {pendingDoctors.map((doctor) => (
-                              <tr key={doctor._id} className={`${
-                                darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                              }`}>
+                              <tr key={doctor._id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="flex items-center">
                                     <div className="flex-shrink-0 h-10 w-10">
-                                      <img
-                                        className="h-10 w-10 rounded-full object-cover"
-                                        src={doctor.profilePicture && doctor.profilePicture !== '' ? doctor.profilePicture : '/default-avatar.png'}
-                                        alt={doctor.fullName}
-                                        onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
-                                      />
+                                      <div className={`w-10 h-10 rounded-full overflow-hidden ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
+                                        {doctor.profilePicture ? (
+                                          <Image
+                                            src={doctor.profilePicture}
+                                            alt={doctor.fullName}
+                                            width={40}
+                                            height={40}
+                                            className="rounded-full object-cover"
+                                            onError={(e) => {
+                                              e.target.style.display = 'none';
+                                              e.target.parentElement.innerHTML = `
+                                                <svg class="h-8 w-8 ${darkMode ? 'text-gray-500' : 'text-gray-400'}" fill="currentColor" viewBox="0 0 24 24">
+                                                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                                </svg>
+                                              `;
+                                            }}
+                                          />
+                                        ) : (
+                                          <svg className={`h-8 w-8 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                          </svg>
+                                        )}
+                                      </div>
                                     </div>
                                     <div className="ml-4">
-                                      <div className={`text-sm font-medium ${
-                                        darkMode ? 'text-white' : 'text-gray-900'
-                                      }`}>
+                                      <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                         {doctor.fullName}
                                       </div>
-                                      <div className={`text-sm ${
-                                        darkMode ? 'text-gray-400' : 'text-gray-500'
-                                      }`}>
+                                      <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                         {doctor.email}
                                       </div>
                                     </div>
@@ -2043,7 +2072,66 @@ export default function AdminDashboard() {
             </button>
             
             <div className="relative" ref={notificationsRef}>
-              <Notifications darkMode={darkMode} />
+              <button
+                onClick={toggleNotifications}
+                className={`p-2 rounded-full transition-colors ${
+                  darkMode
+                    ? 'hover:bg-gray-700'
+                    : 'hover:bg-gray-100'
+                }`}
+              >
+                <Bell className={`h-6 w-6 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                {notifications.length > 0 && (
+                  <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white" />
+                )}
+              </button>
+
+              {/* Notifications Panel */}
+              {notificationsOpen && (
+                <div className={`absolute right-0 mt-2 w-80 rounded-md shadow-lg ${
+                  darkMode ? 'bg-gray-800' : 'bg-white'
+                } ring-1 ring-black ring-opacity-5`}>
+                  <div className="p-4">
+                    <h3 className={`text-lg font-medium mb-4 ${
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      Notifications
+                    </h3>
+                    {notifications.length === 0 ? (
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        No new notifications
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {notifications.map((notification, index) => (
+                          <div
+                            key={index}
+                            className={`p-3 rounded-lg ${
+                              darkMode ? 'bg-gray-700' : 'bg-gray-50'
+                            }`}
+                          >
+                            <div className={`font-medium text-sm mb-1 ${
+                              darkMode ? 'text-white' : 'text-gray-900'
+                            }`}>
+                              {notification.title}
+                            </div>
+                            <p className={`text-sm mb-2 ${
+                              darkMode ? 'text-gray-400' : 'text-gray-500'
+                            }`}>
+                              {notification.message}
+                            </p>
+                            <span className={`text-xs ${
+                              darkMode ? 'text-gray-500' : 'text-gray-400'
+                            }`}>
+                              {notification.time}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             
             <HMenu as="div" className="relative" ref={profileRef}>

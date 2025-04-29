@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { connectToDatabase } from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/db';
+import User from '@/models/User';
 
 export async function GET() {
   try {
@@ -11,50 +12,45 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { db } = await connectToDatabase();
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    await connectToDatabase();
 
     // Total Patients
-    const totalPatients = await db.collection('users').countDocuments({ role: 'patient' });
+    const totalPatients = await User.countDocuments({ role: 'patient' });
 
     // New Patients This Month
-    const newPatientsThisMonth = await db.collection('users').countDocuments({
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    
+    const newPatientsThisMonth = await User.countDocuments({
       role: 'patient',
       createdAt: { $gte: startOfMonth }
     });
 
     // Active Patients
-    const activePatients = await db.collection('users').countDocuments({
+    const activePatients = await User.countDocuments({
       role: 'patient',
       status: 'active'
     });
 
-    // Upcoming Appointments
-    const upcomingAppointments = await db.collection('appointments')
-      .aggregate([
-        {
-          $match: {
-            appointmentDate: { $gt: now }
-          }
-        },
-        {
-          $group: {
-            _id: '$patientId',
-            count: { $sum: 1 }
-          }
-        },
-        {
-          $count: 'total'
-        }
-      ])
-      .toArray();
+    // Pending Patients
+    const pendingPatients = await User.countDocuments({
+      role: 'patient',
+      status: 'pending'
+    });
+
+    // Suspended Patients
+    const suspendedPatients = await User.countDocuments({
+      role: 'patient',
+      status: 'suspended'
+    });
 
     return NextResponse.json({
       totalPatients,
       newPatientsThisMonth,
       activePatients,
-      upcomingAppointments: upcomingAppointments[0]?.total || 0
+      pendingPatients,
+      suspendedPatients
     });
   } catch (error) {
     console.error('Error fetching patient stats:', error);

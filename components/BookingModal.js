@@ -3,9 +3,11 @@ import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { Calendar, Clock, X } from 'lucide-react';
 
-export default function BookingModal({ isOpen, onClose, doctor }) {
+export default function BookingModal({ isOpen, onClose, doctor, onSubmit }) {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  const [reason, setReason] = useState('');
+  const [notes, setNotes] = useState('');
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -26,28 +28,29 @@ export default function BookingModal({ isOpen, onClose, doctor }) {
     setLoading(true);
     setError(null);
 
+    if (!selectedDate || !selectedTime || !reason) {
+      setError('Please fill in all required fields');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          doctorId: doctor._id,
-          date: selectedDate,
-          time: selectedTime,
-          type: 'video', // or 'voice' based on selection
-        }),
-      });
+      // Format date from DD/MM/YYYY to YYYY-MM-DD
+      const [day, month, year] = selectedDate.split('/');
+      const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      
+      const formData = {
+        doctorId: doctor._id,
+        date: formattedDate,
+        time: selectedTime,
+        reason: reason,
+        notes: notes || null // Make notes optional
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to book appointment');
-      }
-
+      await onSubmit(formData);
       onClose();
-      // You might want to show a success message here
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to book appointment');
     } finally {
       setLoading(false);
     }
@@ -101,19 +104,21 @@ export default function BookingModal({ isOpen, onClose, doctor }) {
                     <label className="block text-sm font-medium text-gray-700">
                       Date
                     </label>
-                    <div className="mt-1 relative rounded-md shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Calendar className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        type="date"
-                        className="focus:ring-green-500 focus:border-green-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        required
-                      />
-                    </div>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => {
+                        // Format the date to DD/MM/YYYY for display
+                        const date = new Date(e.target.value);
+                        const day = date.getDate().toString().padStart(2, '0');
+                        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                        const year = date.getFullYear();
+                        setSelectedDate(`${day}/${month}/${year}`);
+                      }}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      required
+                      min={new Date().toISOString().split('T')[0]} // Set min date to today
+                    />
                   </div>
 
                   <div>
@@ -138,6 +143,31 @@ export default function BookingModal({ isOpen, onClose, doctor }) {
                         ))}
                       </select>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Reason for Visit *
+                    </label>
+                    <textarea
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      rows={3}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Additional Notes (Optional)
+                    </label>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      rows={2}
+                    />
                   </div>
 
                   {error && (

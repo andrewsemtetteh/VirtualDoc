@@ -83,6 +83,9 @@ export default function LoginForm() {
         return;
       }
 
+      // Set the initial section to 'dashboard' in localStorage for the respective role
+      localStorage.setItem(`${role}Section`, 'dashboard');
+
       // Redirect to the appropriate dashboard
       router.push(`/dashboard/${role}`);
       setLoading(false);
@@ -149,7 +152,7 @@ export default function LoginForm() {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                      className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-gray-900"
                       placeholder="Enter your email address"
                       required
                     />
@@ -169,7 +172,7 @@ export default function LoginForm() {
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                      className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-gray-900"
                       placeholder="Enter your password"
                       required
                     />
