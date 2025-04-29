@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/db';
+import Appointment from '@/models/Appointment';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import { getIO } from '@/lib/socket';
 import { ObjectId } from 'mongodb';
 import { emitDoctorUpdate } from '@/lib/socket';
@@ -14,32 +15,27 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    await connectToDatabase();
+    
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const type = searchParams.get('type');
-
-    const { db } = await connectToDatabase();
-
-    const query = {
-      $or: [
-        { patientId: session.user.id },
-        { doctorId: session.user.id }
-      ]
-    };
-
-    if (status) query.status = status;
-    if (type) query.type = type;
-
-    const appointments = await db.collection('appointments')
-      .find(query)
-      .sort({ scheduledFor: -1 })
-      .toArray();
-
+    const patientId = session.user.id;
+    
+    let query = { patientId };
+    
+    if (status) {
+      query.status = status;
+    }
+    
+    const appointments = await Appointment.find(query)
+      .populate('doctorId', 'name specialty profilePicture')
+      .sort({ date: 1 });
+    
     return NextResponse.json(appointments);
   } catch (error) {
-    console.error('Get appointments error:', error);
+    console.error('Error fetching appointments:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch appointments' },
       { status: 500 }
     );
   }
@@ -53,59 +49,32 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { doctorId, date, time, type } = await request.json();
-    const { db } = await connectToDatabase();
-
-    // Check if the slot is still available
-    const doctor = await db.collection('doctors').findOne({
-      _id: new ObjectId(doctorId),
-      'availability.date': date,
-      'availability.slots': time
-    });
-
-    if (!doctor) {
-      return NextResponse.json({ error: 'Slot no longer available' }, { status: 400 });
-    }
-
-    // Create the appointment
-    const appointment = {
+    await connectToDatabase();
+    
+    const body = await request.json();
+    const { doctorId, date, time } = body;
+    
+    // Generate video link (you might want to use a service like Daily.co or similar)
+    const videoLink = `https://your-video-service.com/${Date.now()}`;
+    
+    const appointment = new Appointment({
       patientId: session.user.id,
-      doctorId: new ObjectId(doctorId),
+      doctorId,
       date,
       time,
-      type,
-      status: 'scheduled',
-      createdAt: new Date()
-    };
-
-    const result = await db.collection('appointments').insertOne(appointment);
-
-    // Update doctor's availability
-    await db.collection('doctors').updateOne(
-      {
-        _id: new ObjectId(doctorId),
-        'availability.date': date
-      },
-      {
-        $pull: { 'availability.$.slots': time }
-      }
-    );
-
-    // Get updated doctor data
-    const updatedDoctor = await db.collection('doctors').findOne({
-      _id: new ObjectId(doctorId)
+      videoLink,
+      status: 'scheduled'
     });
-
-    // Emit real-time update
-    emitDoctorUpdate(updatedDoctor);
-
-    return NextResponse.json({
-      message: 'Appointment booked successfully',
-      appointmentId: result.insertedId
-    });
+    
+    await appointment.save();
+    
+    return NextResponse.json(appointment);
   } catch (error) {
-    console.error('Error booking appointment:', error);
-    return NextResponse.json({ error: 'Failed to book appointment' }, { status: 500 });
+    console.error('Error creating appointment:', error);
+    return NextResponse.json(
+      { error: 'Failed to create appointment' },
+      { status: 500 }
+    );
   }
 }
 

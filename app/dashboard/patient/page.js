@@ -8,6 +8,9 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useDoctors } from '@/hooks/useDoctors';
 import BookingModal from '@/components/BookingModal';
+import { io } from 'socket.io-client';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 export default function PatientDashboard() {
   const { data: session, status } = useSession();
@@ -17,6 +20,9 @@ export default function PatientDashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [patientProfile, setPatientProfile] = useState(null);
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [dashboardData, setDashboardData] = useState({
     appointments: [],
     prescriptions: [],
@@ -32,9 +38,11 @@ export default function PatientDashboard() {
   const notificationsRef = useRef(null);
   const profileRef = useRef(null);
 
-  const { doctors, loading, error, filters, updateFilters } = useDoctors();
+  const { filters, updateFilters, specialties } = useDoctors();
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [appointments, setAppointments] = useState([]);
+  const socketRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
@@ -80,21 +88,19 @@ export default function PatientDashboard() {
         const data = await response.json();
         
         if (!response.ok) {
-          console.error('Profile fetch error:', data);
-          // Set default values if profile fetch fails
+          console.error('Profile fetch error:', data.error || 'Unknown error', data.sessionData || '');
           setPatientProfile({
             fullName: session?.user?.name || 'Patient',
-            patientId: '#0000',
+            patientId: 'Not Available',
             memberSince: new Date().getFullYear(),
             profilePicture: session?.user?.image || null
           });
           return;
         }
         
-        // Ensure we have the required fields
         const profileData = {
           fullName: data.fullName || session?.user?.name || 'Patient',
-          patientId: data.patientId || '#0000',
+          patientId: data.patientId || 'Not Available',
           memberSince: data.memberSince || new Date().getFullYear(),
           profilePicture: data.profilePicture || session?.user?.image || null
         };
@@ -102,20 +108,19 @@ export default function PatientDashboard() {
         setPatientProfile(profileData);
       } catch (error) {
         console.error('Error fetching patient profile:', error);
-        // Set default values if profile fetch fails
         setPatientProfile({
           fullName: session?.user?.name || 'Patient',
-          patientId: '#0000',
+          patientId: 'Not Available',
           memberSince: new Date().getFullYear(),
           profilePicture: session?.user?.image || null
         });
       }
     };
 
-    if (session?.user) {
+    if (session?.user && status === 'authenticated') {
       fetchPatientProfile();
     }
-  }, [session]);
+  }, [session, status]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -135,6 +140,69 @@ export default function PatientDashboard() {
       fetchDashboardData();
     }
   }, [session]);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/doctors');
+        if (!response.ok) {
+          throw new Error('Failed to fetch doctors');
+        }
+        const data = await response.json();
+        setDoctors(data.doctors);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching doctors:', error);
+        setError(error.message);
+        setLoading(false);
+      }
+    };
+
+    if (session?.user) {
+      fetchDoctors();
+    }
+  }, [session]);
+
+  useEffect(() => {
+    socketRef.current = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001');
+
+    socketRef.current.on('doctorUpdate', (updatedDoctor) => {
+      setDoctors(prev => 
+        prev.map(doc => 
+          doc._id === updatedDoctor._id ? updatedDoctor : doc
+        )
+      );
+    });
+
+    socketRef.current.on('appointmentUpdate', (updatedAppointment) => {
+      setAppointments(prev => 
+        prev.map(app => 
+          app._id === updatedAppointment._id ? updatedAppointment : app
+        )
+      );
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const response = await axios.get('/api/appointments');
+        setAppointments(response.data);
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+        toast.error('Failed to fetch appointments');
+      }
+    };
+
+    fetchAppointments();
+  }, []);
 
   const toggleSidebar = () => {
     const newCollapsed = !collapsed;
@@ -166,6 +234,61 @@ export default function PatientDashboard() {
   const handleBookAppointment = (doctor) => {
     setSelectedDoctor(doctor);
     setShowBookingModal(true);
+  };
+
+  const handleBookingSubmit = async (formData) => {
+    try {
+      const response = await axios.post('/api/appointments', {
+        doctorId: selectedDoctor._id,
+        ...formData
+      });
+
+      // Update local state
+      setAppointments(prev => [...prev, response.data.appointment]);
+      setShowBookingModal(false);
+      setSelectedDoctor(null);
+
+      // Show success notification
+      toast.success('Appointment booked successfully!');
+    } catch (err) {
+      console.error('Error booking appointment:', err);
+      toast.error(err.response?.data?.error || 'Failed to book appointment');
+    }
+  };
+
+  const handleReschedule = async (appointmentId, newDate, newTime) => {
+    try {
+      const response = await axios.put(`/api/appointments/${appointmentId}`, {
+        date: newDate,
+        time: newTime
+      });
+
+      setAppointments(prev => 
+        prev.map(app => 
+          app._id === appointmentId ? response.data : app
+        )
+      );
+
+      toast.success('Appointment rescheduled successfully!');
+    } catch (err) {
+      console.error('Error rescheduling appointment:', err);
+      toast.error(err.response?.data?.error || 'Failed to reschedule appointment');
+    }
+  };
+
+  const handleCancel = async (appointmentId) => {
+    try {
+      await axios.delete(`/api/appointments/${appointmentId}`);
+      
+      setAppointments(prev => 
+        prev.filter(app => app._id !== appointmentId)
+      );
+
+      toast.success('Appointment cancelled successfully!');
+    } catch (err) {
+      console.error('Error cancelling appointment:', err);
+      toast.error(err.response?.data?.error || 'Failed to cancel appointment');
+    }
   };
 
   // Format date for display
@@ -209,135 +332,88 @@ export default function PatientDashboard() {
       case 'dashboard':
         return (
           <div className="space-y-6">
-            {/* Welcome Banner with Profile Summary */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gradient-to-r from-green-900 to-green-800' : 'bg-gradient-to-r from-green-900 to-green-800'} text-white`}>
-              {/* Welcome Section */}
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold mb-2">Welcome back, {patientProfile?.fullName}!</h1>
-                  <p className="text-green-100">Here's what's happening with your health today</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <p className="text-sm text-green-100">Last Checkup</p>
-                    <p className="font-medium">{getRelativeTime(dashboardData.lastCheckup)}</p>
-                  </div>
-                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                    {patientProfile?.profilePicture ? (
-                      <Image 
-                        src={patientProfile.profilePicture} 
-                        alt={patientProfile.fullName} 
-                        width={48} 
-                        height={48} 
-                        className="w-full h-full object-cover rounded-full"
-                      />
-                    ) : (
-                      <span className="text-white text-xl">
-                        {patientProfile?.fullName?.split(' ').map(n => n[0]).join('') || 'P'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Profile Summary */}
+            {/* Health Status Overview */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h2 className="text-xl font-bold mb-4">Health Status Overview</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="flex items-center space-x-4">
-                  <div className={`w-16 h-16 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-700'} flex items-center justify-center`}>
-                    {patientProfile?.profilePicture ? (
-                      <Image 
-                        src={patientProfile.profilePicture} 
-                        alt={patientProfile.fullName} 
-                        width={64} 
-                        height={64} 
-                        className="w-full h-full object-cover rounded-full"
-                      />
-                    ) : (
-                      <span className={`text-2xl font-bold text-white`}>
-                        {patientProfile?.fullName?.split(' ').map(n => n[0]).join('') || 'P'}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-white">{patientProfile?.fullName}</h3>
-                    <p className="text-sm text-green-100">Patient ID: {patientProfile?.patientId}</p>
-                    <p className="text-sm text-green-100">Member since {patientProfile?.memberSince}</p>
-                  </div>
-                </div>
-                <div className={`border-l border-r ${darkMode ? 'border-green-700' : 'border-green-700'} px-6`}>
-                  <h4 className="text-sm font-medium text-green-100 mb-2">Health Status</h4>
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <h3 className="font-medium mb-2">Current Health Status</h3>
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                    <span className="text-sm text-white">Good</span>
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span>Good</span>
                   </div>
-                  <p className="text-sm text-green-100 mt-2">Last updated: {getRelativeTime(dashboardData.lastCheckup)}</p>
+                  <p className="text-sm text-gray-500 mt-2">Last updated: {getRelativeTime(dashboardData.lastCheckup)}</p>
                 </div>
-                <div>
-                  <h4 className="text-sm font-medium text-green-100 mb-2">Next Checkup</h4>
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <h3 className="font-medium mb-2">Next Checkup</h3>
                   <div className="flex items-center space-x-2">
-                    <Calendar size={16} className="text-green-300" />
-                    <span className="text-sm text-white">
-                      {dashboardData.nextCheckup ? formatDate(dashboardData.nextCheckup.date) : 'No upcoming checkups'}
-                    </span>
+                    <Calendar size={16} />
+                    <span>{dashboardData.nextCheckup ? formatDate(dashboardData.nextCheckup.date) : 'No upcoming checkups'}</span>
                   </div>
-                  <p className="text-sm text-green-100 mt-2">
+                  <p className="text-sm text-gray-500 mt-2">
                     {dashboardData.nextCheckup ? `With ${dashboardData.nextCheckup.doctor}` : ''}
                   </p>
+                </div>
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <h3 className="font-medium mb-2">Recent Activity</h3>
+                  <p className="text-sm">Last consultation: {getRelativeTime(dashboardData.lastCheckup)}</p>
+                  <p className="text-sm">Active prescriptions: {dashboardData.prescriptions.length}</p>
                 </div>
               </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center">
-                  <div className="bg-blue-100 p-3 rounded-full">
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <button 
+                onClick={() => handleNavigation('book-appointment')}
+                className={`p-4 rounded-lg shadow-sm flex items-center space-x-3 ${
+                  darkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'
+                }`}
+              >
                     <Calendar size={24} className="text-blue-500" />
-                  </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">{dashboardData.appointments.length}</h2>
-                    <p className="text-sm text-gray-500">Upcoming Appointments</p>
-                  </div>
-                </div>
-              </div>
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center">
-                  <div className="bg-green-100 p-3 rounded-full">
-                    <FileText size={24} className="text-green-500" />
-                  </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">{dashboardData.prescriptions.length}</h2>
-                    <p className="text-sm text-gray-500">Active Prescriptions</p>
-                  </div>
-                </div>
-              </div>
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center">
-                  <div className="bg-purple-100 p-3 rounded-full">
-                    <MessageSquare size={24} className="text-purple-500" />
-                  </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">{dashboardData.unreadMessages}</h2>
-                    <p className="text-sm text-gray-500">Unread Messages</p>
-                  </div>
-                </div>
-              </div>
+                <span>Book Appointment</span>
+              </button>
+              <button 
+                onClick={() => handleNavigation('consultations')}
+                className={`p-4 rounded-lg shadow-sm flex items-center space-x-3 ${
+                  darkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'
+                }`}
+              >
+                <Video size={24} className="text-green-500" />
+                <span>Start Consultation</span>
+              </button>
+              <button 
+                onClick={() => handleNavigation('medical-records')}
+                className={`p-4 rounded-lg shadow-sm flex items-center space-x-3 ${
+                  darkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'
+                }`}
+              >
+                <FileText size={24} className="text-purple-500" />
+                <span>View Records</span>
+              </button>
+              <button 
+                onClick={() => handleNavigation('messages')}
+                className={`p-4 rounded-lg shadow-sm flex items-center space-x-3 ${
+                  darkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'
+                }`}
+              >
+                <MessageSquare size={24} className="text-orange-500" />
+                <span>Messages ({dashboardData.unreadMessages})</span>
+              </button>
             </div>
 
             {/* Upcoming Appointments */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Upcoming Appointments</h3>
+              <h2 className="text-xl font-bold mb-4">Upcoming Appointments</h2>
               <div className="space-y-4">
                 {dashboardData.appointments.length > 0 ? (
                   dashboardData.appointments.map((appointment) => (
                     <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
                             {appointment.doctorName?.split(' ').map(n => n[0]).join('') || 'D'}
-                          </span>
                         </div>
-                        <div className="ml-4">
+                        <div>
                           <p className="font-medium">{appointment.doctorName}</p>
                           <p className="text-sm text-gray-500">{appointment.specialty}</p>
                         </div>
@@ -345,7 +421,20 @@ export default function PatientDashboard() {
                       <div className="text-right">
                         <p className="font-medium">{formatTime(appointment.scheduledFor)}</p>
                         <p className="text-sm text-gray-500">{formatDate(appointment.scheduledFor)}</p>
-                        <p className="text-sm text-blue-500">{appointment.type}</p>
+                        <div className="mt-2 flex space-x-2">
+                          <button 
+                            onClick={() => handleReschedule(appointment._id)}
+                            className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                          >
+                            Reschedule
+                          </button>
+                          <button 
+                            onClick={() => handleCancel(appointment._id)}
+                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -357,29 +446,25 @@ export default function PatientDashboard() {
 
             {/* Recent Prescriptions */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Recent Prescriptions</h3>
+              <h2 className="text-xl font-bold mb-4">Recent Prescriptions</h2>
               <div className="space-y-4">
                 {dashboardData.prescriptions.length > 0 ? (
                   dashboardData.prescriptions.map((prescription) => (
                     <div key={prescription._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
                             {prescription.doctorName?.split(' ').map(n => n[0]).join('') || 'D'}
-                          </span>
                         </div>
-                        <div className="ml-4">
+                        <div>
                           <p className="font-medium">{prescription.doctorName}</p>
                           <p className="text-sm text-gray-500">{prescription.medication}</p>
+                          <p className="text-sm text-gray-500">Issued: {formatDate(prescription.createdAt)}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">{formatDate(prescription.createdAt)}</p>
-                        <button className="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                      <button className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
                           <Download size={16} className="inline mr-1" />
                           Download
                         </button>
-                      </div>
                     </div>
                   ))
                 ) : (
@@ -389,32 +474,36 @@ export default function PatientDashboard() {
             </div>
           </div>
         );
-      case 'find-doctor':
+      case 'book-appointment':
         return (
           <div className="space-y-6">
             {/* Search and Filters */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Find a Doctor</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mb-6`}>
+              <h2 className="text-xl font-bold mb-6">Find and Book a Doctor</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Specialty</label>
+                  <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>Specialty</label>
                   <select 
-                    className={`w-full rounded-md border-gray-300 shadow-sm ${
+                    className={`w-full h-12 rounded-md border-gray-300 shadow-sm ${
                       darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
                     }`}
                     value={filters.specialty}
                     onChange={(e) => updateFilters({ specialty: e.target.value })}
                   >
-                    <option>All Specialties</option>
-                    <option>Dermatology</option>
-                    <option>Cardiology</option>
-                    <option>Pediatrics</option>
+                    <option value="All Specialties">All Specialties</option>
+                    {specialties && specialties.length > 0 ? (
+                      specialties.filter(s => s !== 'All Specialties').map((specialty) => (
+                        <option key={specialty} value={specialty}>{specialty}</option>
+                      ))
+                    ) : (
+                      <option disabled>Loading specialties...</option>
+                    )}
                   </select>
                 </div>
                 <div>
-                  <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Availability</label>
+                  <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>Availability</label>
                   <select 
-                    className={`w-full rounded-md border-gray-300 shadow-sm ${
+                    className={`w-full h-12 rounded-md border-gray-300 shadow-sm ${
                       darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
                     }`}
                     value={filters.availability}
@@ -423,33 +512,23 @@ export default function PatientDashboard() {
                     <option>Any Time</option>
                     <option>Today</option>
                     <option>This Week</option>
+                    <option>Next Week</option>
                   </select>
                 </div>
                 <div>
-                  <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Rating</label>
-                  <select 
-                    className={`w-full rounded-md border-gray-300 shadow-sm ${
-                      darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                    value={filters.rating}
-                    onChange={(e) => updateFilters({ rating: e.target.value })}
-                  >
-                    <option>All Ratings</option>
-                    <option>4+ Stars</option>
-                    <option>3+ Stars</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Search</label>
-                  <input 
-                    type="text" 
-                    placeholder="Search doctors..." 
-                    className={`w-full rounded-md border-gray-300 shadow-sm ${
-                      darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                    }`}
-                    value={filters.search}
-                    onChange={(e) => updateFilters({ search: e.target.value })}
-                  />
+                  <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>Search</label>
+                  <div className="relative">
+                    <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'} h-5 w-5`} />
+                    <input 
+                      type="text" 
+                      placeholder="Search by name, specialty, or location..." 
+                      className={`w-full h-12 pl-10 pr-4 rounded-md border-gray-300 shadow-sm ${
+                        darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      value={filters.search}
+                      onChange={(e) => updateFilters({ search: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -469,32 +548,32 @@ export default function PatientDashboard() {
                   No doctors found matching your criteria
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {doctors.map((doctor) => (
-                    <div key={doctor._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                      <div className="flex items-center">
-                        <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                    <div key={doctor._id} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
+                      <div className="flex items-center space-x-6">
+                        <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                           {doctor.profilePicture ? (
                             <Image 
                               src={doctor.profilePicture} 
                               alt={doctor.name} 
-                              width={64} 
-                              height={64} 
+                              width={80} 
+                              height={80} 
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <span className="text-gray-500 text-xl">{doctor.name.charAt(0)}</span>
+                            <span className="text-gray-500 text-2xl">{doctor?.name ? doctor.name.charAt(0) : '?'}</span>
                           )}
                         </div>
-                        <div className="ml-4">
-                          <p className="font-medium">{doctor.name}</p>
-                          <p className="text-sm text-gray-500">{doctor.specialty}</p>
-                          <div className="flex items-center mt-1">
+                        <div>
+                          <h3 className="text-xl font-medium">{doctor.name}</h3>
+                          <p className="text-gray-500">{doctor.specialty}</p>
+                          <div className="flex items-center mt-2">
                             <div className="flex">
                               {[...Array(5)].map((_, i) => (
                                 <Star 
                                   key={i} 
-                                  className={`h-4 w-4 ${i < Math.floor(doctor.rating) ? 'text-yellow-500' : 'text-gray-300'}`} 
+                                  className={`h-5 w-5 ${i < Math.floor(doctor.rating) ? 'text-yellow-500' : 'text-gray-300'}`} 
                                   fill={i < Math.floor(doctor.rating) ? 'currentColor' : 'none'}
                                 />
                               ))}
@@ -505,13 +584,13 @@ export default function PatientDashboard() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-500">
-                          {doctor.availability.some(a => a.slots > 0) ? 'Available Today' : 'No Availability'}
+                          {doctor?.availability?.some(a => a.slots > 0) ? 'Available Today' : 'No Availability'}
                         </p>
                         <button 
-                          className="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                          className="mt-4 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                           onClick={() => handleBookAppointment(doctor)}
                         >
-                          Book Appointment
+                          Book Video Consultation
                         </button>
                       </div>
                     </div>
@@ -519,97 +598,46 @@ export default function PatientDashboard() {
                 </div>
               )}
             </div>
-          </div>
-        );
-      case 'appointments':
-        return (
-          <div className="space-y-6">
-            {/* Book New Appointment */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Book New Appointment</h3>
-              <form className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Select Doctor</label>
-                    <select className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm ${
-                      darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}>
-                      <option>Dr. Sarah Smith - Dermatology</option>
-                      <option>Dr. John Doe - Cardiology</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Appointment Type</label>
-                    <select className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm ${
-                      darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}>
-                      <option>Video Consultation</option>
-                      <option>Voice Consultation</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Date</label>
-                    <input 
-                      type="date" 
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm ${
-                        darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                      }`} 
-                    />
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Time</label>
-                    <input 
-                      type="time" 
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm ${
-                        darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                      }`} 
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Reason for Visit</label>
-                  <textarea 
-                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm ${
-                      darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`} 
-                    rows="3"
-                  ></textarea>
-                </div>
-                <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                  Book Appointment
-                </button>
-              </form>
-            </div>
 
-            {/* Appointment List */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Your Appointments</h3>
+            {/* Your Appointments */}
+              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h2 className="text-xl font-bold mb-4">Your Appointments</h2>
               <div className="space-y-4">
-                {[1, 2, 3].map((appointment) => (
-                  <div key={appointment} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-500">DS</span>
+                {appointments.length > 0 ? (
+                  appointments.map((appointment) => (
+                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                          {appointment.doctorName?.split(' ').map(n => n[0]).join('') || 'D'}
+                    </div>
+                    <div>
+                          <p className="font-medium">{appointment.doctorName}</p>
+                          <p className="text-sm text-gray-500">{appointment.specialty}</p>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <p className="font-medium">Dr. Sarah Smith</p>
-                        <p className="text-sm text-gray-500">Dermatology Consultation</p>
+                      <div className="text-right">
+                        <p className="font-medium">{formatTime(appointment.scheduledFor)}</p>
+                        <p className="text-sm text-gray-500">{formatDate(appointment.scheduledFor)}</p>
+                        <div className="mt-2 flex space-x-2">
+                          <button 
+                            onClick={() => handleReschedule(appointment._id)}
+                            className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                          >
+                            Reschedule
+                          </button>
+                          <button 
+                            onClick={() => handleCancel(appointment._id)}
+                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">Tomorrow, 2:30 PM</p>
-                      <p className="text-sm text-blue-500">Video Call</p>
-                      <div className="mt-2 flex space-x-2">
-                        <button className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
-                          Reschedule
-                        </button>
-                        <button className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-center text-gray-500">No appointments scheduled</p>
+                )}
               </div>
             </div>
           </div>
@@ -617,25 +645,109 @@ export default function PatientDashboard() {
       case 'consultations':
         return (
           <div className="space-y-6">
-            {/* Video Call Interface */}
+            {/* Past Consultations */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Video Consultation</h3>
-              <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <Video size={48} className="mx-auto text-gray-400" />
-                  <p className="mt-2 text-gray-500">Waiting for doctor to join...</p>
-                </div>
+              <h2 className="text-xl font-bold mb-4">Past Consultations</h2>
+              <div className="space-y-4">
+                {[1, 2, 3].map((consultation) => (
+                  <div key={consultation} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">DS</span>
+                    </div>
+                    <div>
+                          <h3 className="font-medium">Dr. Sarah Smith</h3>
+                          <p className="text-sm text-gray-500">Dermatology</p>
+                    </div>
+                      </div>
+                      <span className="text-sm text-gray-500">2 days ago</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 className="font-medium mb-2">Doctor's Notes</h4>
+                        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
+                          <p className="text-sm">Patient presented with mild eczema symptoms. Recommended topical corticosteroid cream and follow-up in 2 weeks.</p>
+                    </div>
+                  </div>
+                      
+                  <div>
+                        <h4 className="font-medium mb-2">Diagnosis</h4>
+                        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
+                          <p className="text-sm">Mild eczema</p>
+                  </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <h4 className="font-medium mb-2">Prescription</h4>
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
+                        <p className="text-sm">Topical corticosteroid cream (1% hydrocortisone)</p>
+                        <p className="text-sm text-gray-500 mt-2">Apply twice daily for 2 weeks</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex space-x-4">
+                      <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        <Download size={16} className="inline mr-1" />
+                        Download Consultation Notes
+                    </button>
+                      <button className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                        <Download size={16} className="inline mr-1" />
+                        Download Prescription
+                    </button>
+                  </div>
               </div>
-              <div className="mt-4 flex justify-center space-x-4">
-                <button className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600">
-                  <Video size={24} />
-                </button>
-                <button className="p-3 bg-green-500 text-white rounded-full hover:bg-green-600">
-                  <MessageSquare size={24} />
-                </button>
-                <button className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600">
-                  <Upload size={24} />
-                </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Upcoming Consultation */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h2 className="text-xl font-bold mb-4">Upcoming Consultation</h2>
+              <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500">DS</span>
+                      </div>
+                    <div>
+                      <h3 className="font-medium">Dr. Sarah Smith</h3>
+                      <p className="text-sm text-gray-500">Dermatology</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">Tomorrow, 2:30 PM</p>
+                    <p className="text-sm text-gray-500">Video Consultation</p>
+                  </div>
+                </div>
+                
+                <div className="mt-4">
+                  <h4 className="font-medium mb-2">Consultation Link</h4>
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="text" 
+                      value="https://virtualdoc.com/consultation/123456" 
+                      readOnly 
+                      className={`flex-1 p-2 rounded border ${
+                        darkMode ? 'bg-gray-600 border-gray-500 text-white' : 'bg-gray-100 border-gray-200 text-gray-900'
+                      }`}
+                    />
+                    <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                      Copy Link
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex space-x-4">
+                  <button className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+                          Reschedule
+                        </button>
+                  <button className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                          Cancel
+                        </button>
+                      </div>
               </div>
             </div>
           </div>
@@ -643,36 +755,127 @@ export default function PatientDashboard() {
       case 'medical-records':
         return (
           <div className="space-y-6">
-            {/* Medical Records */}
+            {/* Medical Records Overview */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Medical Records</h3>
+              <h2 className="text-xl font-bold mb-4">Medical Records Overview</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <h3 className="font-medium mb-2">Allergies</h3>
+                  <div className="space-y-2">
+                    <p className="text-sm">No known allergies</p>
+                    <button className="text-sm text-blue-500 hover:text-blue-600">Add Allergy</button>
+                </div>
+              </div>
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <h3 className="font-medium mb-2">Medications</h3>
+                  <div className="space-y-2">
+                    <p className="text-sm">Topical corticosteroid cream (1% hydrocortisone)</p>
+                    <button className="text-sm text-blue-500 hover:text-blue-600">Add Medication</button>
+              </div>
+            </div>
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <h3 className="font-medium mb-2">Conditions</h3>
+                  <div className="space-y-2">
+                    <p className="text-sm">Mild eczema</p>
+                    <button className="text-sm text-blue-500 hover:text-blue-600">Add Condition</button>
+          </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Medical Records */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Recent Medical Records</h2>
+                <button className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                  Request New Record
+                </button>
+              </div>
               <div className="space-y-4">
                 {[1, 2, 3].map((record) => (
-                  <div key={record} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <div className="flex justify-between items-start">
+                  <div key={record} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <div className="flex justify-between items-start mb-4">
                       <div>
-                        <p className="font-medium">Consultation with Dr. Sarah Smith</p>
+                        <h3 className="font-medium">Consultation with Dr. Sarah Smith</h3>
                         <p className="text-sm text-gray-500">Dermatology - Follow-up</p>
                       </div>
                       <span className="text-sm text-gray-500">2 days ago</span>
                     </div>
-                    <div className="mt-2">
-                      <p className="text-sm">Diagnosis: Mild eczema</p>
-                      <p className="text-sm">Treatment: Topical corticosteroid cream</p>
-                      <p className="text-sm">Follow-up: 2 weeks</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-medium mb-2">Diagnosis</h4>
+                        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
+                          <p className="text-sm">Mild eczema</p>
                     </div>
-                    <div className="mt-4 flex space-x-2">
-                      <button className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium mb-2">Treatment</h4>
+                        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
+                          <p className="text-sm">Topical corticosteroid cream</p>
+                          <p className="text-sm text-gray-500 mt-2">Apply twice daily for 2 weeks</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <h4 className="font-medium mb-2">Notes</h4>
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
+                        <p className="text-sm">Patient presented with mild eczema symptoms. Recommended topical corticosteroid cream and follow-up in 2 weeks.</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex space-x-4">
+                      <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                         <Download size={16} className="inline mr-1" />
-                        Download Report
+                        Download Record
                       </button>
-                      <button className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                      <button className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
                         Share with Doctor
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Update Health Information */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h2 className="text-xl font-bold mb-4">Update Health Information</h2>
+              <form className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                    Medical History
+                  </label>
+                  <textarea
+                    className={`w-full rounded-md border-gray-300 shadow-sm ${
+                      darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    }`}
+                    rows="4"
+                    placeholder="Enter your medical history..."
+                  ></textarea>
+                </div>
+                
+                <div>
+                  <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                    Current Symptoms
+                  </label>
+                  <textarea
+                    className={`w-full rounded-md border-gray-300 shadow-sm ${
+                      darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    }`}
+                    rows="4"
+                    placeholder="Describe any current symptoms..."
+                  ></textarea>
+                </div>
+
+                <div className="flex justify-end">
+                  <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                    Save Changes
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         );
@@ -755,30 +958,17 @@ export default function PatientDashboard() {
               {!collapsed && <span className="ml-3 font-medium">Dashboard</span>}
             </div>
             
-            {/* Find A Doctor */}
+            {/* Book Appointment */}
             <div 
-              onClick={() => handleNavigation('find-doctor')}
+              onClick={() => handleNavigation('book-appointment')}
               className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                activeSection === 'find-doctor' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <Stethoscope size={20} />
-              {!collapsed && <span className="ml-3">Find A Doctor</span>}
-            </div>
-            
-            {/* Appointments */}
-            <div 
-              onClick={() => handleNavigation('appointments')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                activeSection === 'appointments' 
+                activeSection === 'book-appointment' 
                   ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
                   : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
               }`}
             >
               <Calendar size={20} />
-              {!collapsed && <span className="ml-3">Appointments</span>}
+              {!collapsed && <span className="ml-3">Book Appointment</span>}
             </div>
             
             {/* Consultations */}
@@ -837,7 +1027,7 @@ export default function PatientDashboard() {
             </button>
             <h1 className="ml-4 text-2xl font-bold">
               {activeSection === 'medical-records' ? 'Medical Records' : 
-               activeSection === 'find-doctor' ? 'Find A Doctor' :
+               activeSection === 'book-appointment' ? 'Find and Book a Doctor' :
                activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}
             </h1>
           </div>
@@ -949,9 +1139,11 @@ export default function PatientDashboard() {
                 </div>
                 <div className="text-left hidden md:block">
                   <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                    {session?.user?.name || 'John Doe'}
+                    {patientProfile?.fullName || session?.user?.name || 'Patient'}
                   </p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Patient</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {patientProfile?.patientId || 'Loading...'}
+                  </p>
                 </div>
               </HMenu.Button>
 
@@ -968,23 +1160,6 @@ export default function PatientDashboard() {
                   darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
                 }`}>
                   <div className="py-1">
-                    <HMenu.Item>
-                      {({ active }) => (
-                        <a
-                          href="/dashboard/patient/profile"
-                          className={`${
-                            active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
-                          } block px-4 py-2 text-sm rounded-t-lg ${
-                            darkMode ? 'text-gray-200' : 'text-gray-700'
-                          }`}
-                        >
-                          <div className="flex items-center">
-                            <User className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                            Your Profile
-                          </div>
-                        </a>
-                      )}
-                    </HMenu.Item>
                     <HMenu.Item>
                       {({ active }) => (
                         <a
@@ -1034,7 +1209,7 @@ export default function PatientDashboard() {
         </main>
       </div>
 
-      {/* Add BookingModal */}
+      {/* Booking Modal */}
       <BookingModal
         isOpen={showBookingModal}
         onClose={() => {
@@ -1042,6 +1217,7 @@ export default function PatientDashboard() {
           setSelectedDoctor(null);
         }}
         doctor={selectedDoctor}
+        onSubmit={handleBookingSubmit}
       />
     </div>
   );

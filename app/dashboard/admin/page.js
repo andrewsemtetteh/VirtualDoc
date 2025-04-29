@@ -7,7 +7,7 @@ import {
   BarChart, Users, Calendar, FileText, 
   Menu, X, Search, Bell, Sun, Moon,
   ChevronDown, LayoutDashboard, ShoppingCart, User, Settings,
-  LogOut, UserPlus, UserCheck
+  LogOut, UserPlus, UserCheck, Clock
 } from 'lucide-react';
 import { Menu as HMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
@@ -58,6 +58,9 @@ export default function AdminDashboard() {
   const [patientTotalPages, setPatientTotalPages] = useState(1);
   const [patientStatus, setPatientStatus] = useState('all');
   const [patientSearch, setPatientSearch] = useState('');
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [suspensionReason, setSuspensionReason] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -213,6 +216,37 @@ export default function AdminDashboard() {
     } finally {
       setActionInProgress(false);
     }
+  };
+
+  const handleViewPatient = (patientId) => {
+    router.push(`/dashboard/admin/patients/${patientId}`);
+  };
+
+  const handleSuspendPatient = async (patientId, reason) => {
+    try {
+      const response = await fetch(`/api/admin/patients/${patientId}/suspend`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      if (!response.ok) throw new Error('Failed to suspend patient');
+
+      // Refresh patient list
+      await fetchPatients(patientPage, patientStatus, patientSearch);
+      setShowSuspendModal(false);
+      setSuspensionReason('');
+      setSelectedPatient(null);
+    } catch (error) {
+      console.error('Error suspending patient:', error);
+    }
+  };
+
+  const openSuspendModal = (patient) => {
+    setSelectedPatient(patient);
+    setShowSuspendModal(true);
   };
 
   const openRejectionModal = (doctor) => {
@@ -637,53 +671,85 @@ export default function AdminDashboard() {
                 {/* Patients Overview Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                   {/* Total Patients */}
-                  <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                    <div className="flex items-center">
-                      <div className="bg-blue-100 p-3 rounded-full">
-                        <Users size={24} className="text-blue-500" />
+                  <div className={`p-6 rounded-lg ${
+                    darkMode 
+                      ? 'bg-gray-800 shadow-md' 
+                      : 'bg-white shadow-md border border-gray-100 hover:shadow-lg'
+                  } transition-all duration-300`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Total Patients
+                        </p>
+                        <h3 className="text-2xl font-bold mt-2">{patientStats.totalPatients}</h3>
                       </div>
-                      <div className="ml-4">
-                        <h2 className="text-2xl font-bold">{patientStats.totalPatients}</h2>
-                        <p className="text-sm text-gray-500">Total Patients</p>
+                      <div className={`p-3 rounded-full ${
+                        darkMode ? 'bg-blue-900' : 'bg-blue-100'
+                      }`}>
+                        <Users className="w-6 h-6 text-blue-500" />
                       </div>
                     </div>
                   </div>
                   
-                  {/* New Patients This Month */}
-                  <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                    <div className="flex items-center">
-                      <div className="bg-green-100 p-3 rounded-full">
-                        <UserPlus size={24} className="text-green-500" />
+                  {/* New Patients */}
+                  <div className={`p-6 rounded-lg ${
+                    darkMode 
+                      ? 'bg-gray-800 shadow-md' 
+                      : 'bg-white shadow-md border border-gray-100 hover:shadow-lg'
+                  } transition-all duration-300`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          New This Month
+                        </p>
+                        <h3 className="text-2xl font-bold mt-2">{patientStats.newPatientsThisMonth}</h3>
                       </div>
-                      <div className="ml-4">
-                        <h2 className="text-2xl font-bold">{patientStats.newPatientsThisMonth}</h2>
-                        <p className="text-sm text-gray-500">New This Month</p>
+                      <div className={`p-3 rounded-full ${
+                        darkMode ? 'bg-green-900' : 'bg-green-100'
+                      }`}>
+                        <UserPlus className="w-6 h-6 text-green-500" />
                       </div>
                     </div>
                   </div>
                   
                   {/* Active Patients */}
-                  <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                    <div className="flex items-center">
-                      <div className="bg-purple-100 p-3 rounded-full">
-                        <UserCheck size={24} className="text-purple-500" />
+                  <div className={`p-6 rounded-lg ${
+                    darkMode 
+                      ? 'bg-gray-800 shadow-md' 
+                      : 'bg-white shadow-md border border-gray-100 hover:shadow-lg'
+                  } transition-all duration-300`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Active Patients
+                        </p>
+                        <h3 className="text-2xl font-bold mt-2">{patientStats.activePatients}</h3>
                       </div>
-                      <div className="ml-4">
-                        <h2 className="text-2xl font-bold">{patientStats.activePatients}</h2>
-                        <p className="text-sm text-gray-500">Active Patients</p>
+                      <div className={`p-3 rounded-full ${
+                        darkMode ? 'bg-purple-900' : 'bg-purple-100'
+                      }`}>
+                        <UserCheck className="w-6 h-6 text-purple-500" />
                       </div>
                     </div>
                   </div>
                   
                   {/* Upcoming Appointments */}
-                  <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                    <div className="flex items-center">
-                      <div className="bg-yellow-100 p-3 rounded-full">
-                        <Calendar size={24} className="text-yellow-500" />
+                  <div className={`p-6 rounded-lg ${
+                    darkMode 
+                      ? 'bg-gray-800 shadow-md' 
+                      : 'bg-white shadow-md border border-gray-100 hover:shadow-lg'
+                  } transition-all duration-300`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Upcoming Appointments
+                        </p>
+                        <h3 className="text-2xl font-bold mt-2">{patientStats.upcomingAppointments}</h3>
                       </div>
-                      <div className="ml-4">
-                        <h2 className="text-2xl font-bold">{patientStats.upcomingAppointments}</h2>
-                        <p className="text-sm text-gray-500">Upcoming Appointments</p>
+                      <div className={`p-3 rounded-full ${
+                        darkMode ? 'bg-yellow-900' : 'bg-yellow-100'
+                      }`}>
+                        <Calendar className="w-6 h-6 text-yellow-500" />
                       </div>
                     </div>
                   </div>
@@ -693,12 +759,12 @@ export default function AdminDashboard() {
                 <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mb-6`}>
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-medium">Patient Records</h3>
-                    <div className="flex items-center">
-                      <div className={`flex items-center rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} px-4 py-2 mr-4`}>
+                    <div className="flex items-center space-x-4">
+                      <div className={`flex items-center rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} px-4 py-2`}>
                         <Search size={16} className="text-gray-500" />
                         <input 
                           type="text" 
-                          placeholder="Search patients" 
+                          placeholder="Search patients..." 
                           className={`ml-2 bg-transparent focus:outline-none w-40 ${darkMode ? 'placeholder-gray-400' : 'placeholder-gray-500'}`}
                           value={patientSearch}
                           onChange={(e) => {
@@ -716,12 +782,12 @@ export default function AdminDashboard() {
                         }}
                       >
                         <option value="all">All Patients</option>
-                        <option value="active">Active Patients</option>
-                        <option value="inactive">Inactive Patients</option>
+                        <option value="active">Active</option>
+                        <option value="suspended">Suspended</option>
                       </select>
                     </div>
                   </div>
-                  
+
                   {/* Table */}
                   <div className="overflow-x-auto">
                     <table className="min-w-full">
@@ -740,43 +806,59 @@ export default function AdminDashboard() {
                           <tr key={patient._id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
                             <td className="py-4 px-3 md:px-6">
                               <div className="flex items-center">
-                                <div className={`w-8 h-8 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center`}>
-                                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    {patient.fullName?.split(' ').map(n => n[0]).join('') || 'P'}
-                                  </span>
+                                <div className={`w-8 h-8 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} flex items-center justify-center overflow-hidden`}>
+                                  {patient.profilePicture ? (
+                                    <Image 
+                                      src={patient.profilePicture} 
+                                      alt={patient.fullName} 
+                                      width={32} 
+                                      height={32} 
+                                      className="w-full h-full object-cover rounded-full"
+                                    />
+                                  ) : (
+                                    <User className="h-4 w-4 text-gray-500" />
+                                  )}
                                 </div>
                                 <span className="ml-3">{patient.fullName}</span>
                               </div>
                             </td>
-                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient._id}</td>
-                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.phone}</td>
+                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.patientId || 'PT-0001'}</td>
+                            <td className="py-4 px-3 md:px-6 text-sm md:text-base">{patient.phone || 'No Phone'}</td>
                             <td className="py-4 px-3 md:px-6 text-sm md:text-base">
                               {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'N/A'}
                             </td>
                             <td className="py-4 px-3 md:px-6">
                               <span className={`px-2 py-1 rounded text-xs ${
-                                patient.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                patient.status === 'active' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : patient.status === 'suspended'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
                               }`}>
                                 {patient.status}
                               </span>
                             </td>
                             <td className="py-4 px-3 md:px-6">
                               <div className="flex space-x-2">
-                                <button className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                  </svg>
+                                <button
+                                  className={`mr-2 ${
+                                    darkMode 
+                                      ? 'text-blue-400 hover:text-blue-300'
+                                      : 'text-blue-600 hover:text-blue-900'
+                                  }`}
+                                  onClick={() => handleViewPatient(patient._id)}
+                                >
+                                  View
                                 </button>
-                                <button className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </button>
-                                <button className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
+                                <button
+                                  className={`${
+                                    darkMode
+                                      ? 'text-red-400 hover:text-red-300'
+                                      : 'text-red-600 hover:text-red-900'
+                                  }`}
+                                  onClick={() => openSuspendModal(patient)}
+                                >
+                                  Suspend
                                 </button>
                               </div>
                             </td>
@@ -785,7 +867,7 @@ export default function AdminDashboard() {
                       </tbody>
                     </table>
                   </div>
-                  
+
                   {/* Pagination */}
                   <div className="flex flex-col sm:flex-row justify-between items-center mt-4 md:mt-6 space-y-3 sm:space-y-0">
                     <div className="text-xs md:text-sm text-gray-500">
@@ -822,6 +904,48 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
+
+                {/* Suspend Patient Modal */}
+                {showSuspendModal && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} max-w-md w-full mx-4`}>
+                      <h3 className="text-lg font-medium mb-4">Suspend Patient Account</h3>
+                      <p className="text-sm text-gray-500 mb-4">
+                        Please provide a reason for suspending {selectedPatient?.fullName}'s account
+                      </p>
+                      <textarea
+                        value={suspensionReason}
+                        onChange={(e) => setSuspensionReason(e.target.value)}
+                        className={`w-full p-2 rounded border mb-4 ${
+                          darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white' 
+                            : 'bg-white border-gray-300'
+                        }`}
+                        rows="4"
+                        placeholder="Enter suspension reason..."
+                      />
+                      <div className="flex justify-end space-x-2">
+                        <button
+                          onClick={() => setShowSuspendModal(false)}
+                          className={`px-4 py-2 rounded ${
+                            darkMode 
+                              ? 'bg-gray-700 hover:bg-gray-600' 
+                              : 'bg-gray-200 hover:bg-gray-300'
+                          }`}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleSuspendPatient(selectedPatient._id, suspensionReason)}
+                          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                          disabled={!suspensionReason.trim()}
+                        >
+                          Confirm Suspension
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             );
             case 'doctors': {
@@ -1036,33 +1160,47 @@ export default function AdminDashboard() {
                               }`}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="flex items-center">
-                                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                                    {doctor.profilePicture && doctor.profilePicture !== '' ? (
-                                      <img
-                                        className="h-10 w-10 rounded-full object-cover"
-                                          src={doctor.profilePicture} 
-                                          alt={doctor.fullName}
-                                        onError={e => { e.target.onerror = null; e.target.src = ''; }}
-                                        />
+                                    <div className={`flex-shrink-0 h-10 w-10 rounded-full ${
+                                      darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                                    } flex items-center justify-center overflow-hidden`}>
+                                      {doctor.profilePicture && doctor.profilePicture !== '' ? (
+                                        <div className="h-10 w-10 relative">
+                                          <Image 
+                                            src={doctor.profilePicture} 
+                                            alt={doctor.fullName || 'Doctor profile'} 
+                                            width={40} 
+                                            height={40} 
+                                            className="rounded-full object-cover"
+                                            priority={true}
+                                            onError={(e) => {
+                                              e.target.src = '';
+                                              e.target.parentElement.innerHTML = `
+                                                <svg class="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                                  <circle cx="12" cy="8" r="4" />
+                                                  <path d="M4 20c0-4 8-4 8-4s8 0 8 4v1H4v-1z" />
+                                                </svg>
+                                              `;
+                                            }}
+                                          />
+                                        </div>
                                       ) : (
-                                      // Default SVG icon
-                                      <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                                        <circle cx="12" cy="8" r="4" />
-                                        <path d="M4 20c0-4 8-4 8-4s8 0 8 4v1H4v-1z" />
-                                      </svg>
+                                        <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                          <circle cx="12" cy="8" r="4" />
+                                          <path d="M4 20c0-4 8-4 8-4s8 0 8 4v1H4v-1z" />
+                                        </svg>
                                       )}
                                     </div>
                                     <div className="ml-4">
-                                    <div className={`text-sm font-medium ${
-                                      darkMode ? 'text-white' : 'text-gray-900'
-                                    }`}>
-                                      {doctor.fullName}
-                                    </div>
-                                    <div className={`text-sm ${
-                                      darkMode ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                      {doctor.email}
-                                    </div>
+                                      <div className={`text-sm font-medium ${
+                                        darkMode ? 'text-white' : 'text-gray-900'
+                                      }`}>
+                                        {doctor.fullName}
+                                      </div>
+                                      <div className={`text-sm ${
+                                        darkMode ? 'text-gray-400' : 'text-gray-500'
+                                      }`}>
+                                        {doctor.email}
+                                      </div>
                                     </div>
                                   </div>
                                 </td>
@@ -1946,23 +2084,7 @@ export default function AdminDashboard() {
                   darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
                 }`}>
                   <div className="py-1">
-                    <HMenu.Item>
-                      {({ active }) => (
-                        <a
-                          href="/dashboard/admin/profile"
-                          className={`${
-                            active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
-                          } block px-4 py-2 text-sm rounded-t-lg ${
-                            darkMode ? 'text-gray-200' : 'text-gray-700'
-                          }`}
-                        >
-                          <div className="flex items-center">
-                            <User className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                            Your Profile
-                          </div>
-                        </a>
-                      )}
-                    </HMenu.Item>
+
                     <HMenu.Item>
                       {({ active }) => (
                         <a

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const appointmentSchema = new mongoose.Schema({
   patientId: {
@@ -8,30 +8,25 @@ const appointmentSchema = new mongoose.Schema({
   },
   doctorId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Doctor',
     required: true
   },
-  scheduledFor: {
+  date: {
     type: Date,
     required: true
   },
-  type: {
+  time: {
     type: String,
-    enum: ['video', 'voice', 'in-person'],
     required: true
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'completed', 'cancelled'],
-    default: 'pending'
+    enum: ['scheduled', 'completed', 'cancelled', 'rescheduled'],
+    default: 'scheduled'
   },
-  reason: {
-    type: String,
-    required: true
-  },
-  notes: {
-    type: String
-  },
+  videoLink: String,
+  notes: String,
+  diagnosis: String,
   prescription: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Prescription'
@@ -39,17 +34,9 @@ const appointmentSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
   }
 });
 
-// Update the updatedAt timestamp before saving
-appointmentSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
-});
+const Appointment = mongoose.models.Appointment || mongoose.model('Appointment', appointmentSchema);
 
-module.exports = mongoose.models.Appointment || mongoose.model('Appointment', appointmentSchema); 
+export default Appointment; 

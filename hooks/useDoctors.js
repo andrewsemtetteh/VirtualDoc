@@ -1,83 +1,78 @@
 import { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
 
-export const useDoctors = () => {
+export function useDoctors() {
   const [doctors, setDoctors] = useState([]);
+  const [specialties, setSpecialties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     specialty: 'All Specialties',
-    availability: 'Any Time',
-    rating: 'All Ratings',
     search: ''
   });
 
+  // Fetch specialties
   useEffect(() => {
-    // Initialize Socket.io connection
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL);
-
-    // Join the doctors room
-    socket.emit('join:doctors');
-
-    // Handle new doctor updates
-    socket.on('doctor:update', (updatedDoctor) => {
-      setDoctors(prevDoctors => 
-        prevDoctors.map(doctor => 
-          doctor._id === updatedDoctor._id ? updatedDoctor : doctor
-        )
-      );
-    });
-
-    // Handle new doctor additions
-    socket.on('doctor:new', (newDoctor) => {
-      setDoctors(prevDoctors => [newDoctor, ...prevDoctors]);
-    });
-
-    // Cleanup on unmount
-    return () => {
-      socket.emit('leave:doctors');
-      socket.disconnect();
+    const fetchSpecialties = async () => {
+      try {
+        const response = await fetch('/api/doctors/specialties');
+        if (!response.ok) {
+          throw new Error('Failed to fetch specialties');
+        }
+        const data = await response.json();
+        setSpecialties(data.specializations);
+      } catch (error) {
+        console.error('Error fetching specialties:', error);
+        setError(error.message);
+      }
     };
+
+    fetchSpecialties();
   }, []);
 
+  // Fetch doctors
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
         setLoading(true);
-        const queryParams = new URLSearchParams({
-          specialty: filters.specialty,
-          availability: filters.availability,
-          rating: filters.rating,
-          search: filters.search
-        });
-
-        const response = await fetch(`/api/doctors?${queryParams}`);
+        const response = await fetch('/api/doctors');
         if (!response.ok) {
           throw new Error('Failed to fetch doctors');
         }
-
         const data = await response.json();
         setDoctors(data);
-        setError(null);
-      } catch (err) {
-        setError(err.message);
+      } catch (error) {
+        console.error('Error fetching doctors:', error);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
     };
 
     fetchDoctors();
-  }, [filters]);
+  }, []);
+
+  // Filter doctors
+  const filteredDoctors = doctors.filter(doctor => {
+    const matchesSpecialty = filters.specialty === 'All Specialties' || doctor.specialization === filters.specialty;
+    const matchesSearch = !filters.search || 
+      doctor.fullName.toLowerCase().includes(filters.search.toLowerCase()) ||
+      doctor.specialization.toLowerCase().includes(filters.search.toLowerCase());
+    return matchesSpecialty && matchesSearch;
+  });
 
   const updateFilters = (newFilters) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters
+    }));
   };
 
   return {
-    doctors,
+    doctors: filteredDoctors,
+    specialties,
     loading,
     error,
     filters,
     updateFilters
   };
-}; 
+} 

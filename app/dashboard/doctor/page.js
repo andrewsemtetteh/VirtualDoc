@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Bell, Settings, LogOut, User, Menu, X, Search, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Bell, Settings, LogOut, User, Menu, X, Search, Sun, Moon, Edit, Trash2 } from 'lucide-react';
 import { Menu as HMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import Image from 'next/image';
@@ -85,7 +85,13 @@ export default function DoctorDashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [pastAppointments, setPastAppointments] = useState([]);
   const [recentConsultations, setRecentConsultations] = useState([]);
+  const [dashboardData, setDashboardData] = useState({
+    monthlyAppointments: 0,
+    totalPatients: 0,
+    unreadMessages: 0
+  });
   const [notifications, setNotifications] = useState([
     { id: 1, type: 'appointment', message: 'New appointment request from John Doe', time: '5 mins ago', read: false },
     { id: 2, type: 'message', message: 'New message from Sarah Smith', time: '15 mins ago', read: false },
@@ -99,6 +105,20 @@ export default function DoctorDashboard() {
   const profileRef = useRef(null);
 
   const [doctorProfile, setDoctorProfile] = useState(null);
+
+  const [appointmentFilters, setAppointmentFilters] = useState({
+    date: '',
+    patient: '',
+    status: 'all'
+  });
+
+  const [patientFilters, setPatientFilters] = useState({
+    search: '',
+    lastVisit: 'all',
+    sortBy: 'name'
+  });
+
+  const [patients, setPatients] = useState([]);
 
   useEffect(() => {
     setMounted(true);
@@ -148,9 +168,33 @@ export default function DoctorDashboard() {
 
   useEffect(() => {
     if (session?.user?.email) {
+      // Fetch dashboard data
+      fetch('/api/doctor/dashboard')
+        .then(res => res.json())
+        .then(data => setDashboardData(data));
+
+      // Fetch upcoming appointments
+      fetch('/api/appointments/upcoming')
+        .then(res => res.json())
+        .then(data => setUpcomingAppointments(data));
+
+      // Fetch past appointments
+      fetch('/api/appointments/past')
+        .then(res => res.json())
+        .then(data => setPastAppointments(data));
+
+      // Fetch doctor profile
       fetch(`/api/doctor/profile?email=${encodeURIComponent(session.user.email)}`)
         .then(res => res.json())
         .then(data => setDoctorProfile(data));
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetch('/api/doctor/patients')
+        .then(res => res.json())
+        .then(data => setPatients(data));
     }
   }, [session]);
 
@@ -186,6 +230,51 @@ export default function DoctorDashboard() {
       case 'dashboard':
         return (
           <div className="space-y-6">
+            {/* Today's Appointments */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className="text-lg font-medium mb-4">Today's Appointments</h3>
+              <div className="space-y-4">
+                {upcomingAppointments
+                  .filter(appointment => {
+                    const appointmentDate = new Date(appointment.scheduledFor);
+                    const today = new Date();
+                    return appointmentDate.toDateString() === today.toDateString();
+                  })
+                  .map((appointment) => (
+                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">
+                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                          </span>
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">{appointment.patientName}</p>
+                          <p className="text-sm text-gray-500">{appointment.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <p className="font-medium">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                          <p className="text-sm text-gray-500">Today</p>
+                        </div>
+                        <button 
+                          className={`px-4 py-2 rounded ${
+                            new Date(appointment.scheduledFor).getTime() - Date.now() <= 600000 // 10 minutes before
+                              ? 'bg-green-500 text-white hover:bg-green-600'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                          disabled={new Date(appointment.scheduledFor).getTime() - Date.now() > 600000}
+                          onClick={() => handleJoinVideoCall(appointment._id)}
+                        >
+                          Join Call
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
@@ -194,8 +283,8 @@ export default function DoctorDashboard() {
                     <Calendar size={24} className="text-blue-500" />
                   </div>
                   <div className="ml-4">
-                    <h2 className="text-2xl font-bold">12</h2>
-                    <p className="text-sm text-gray-500">Today's Appointments</p>
+                    <h2 className="text-2xl font-bold">{dashboardData.monthlyAppointments}</h2>
+                    <p className="text-sm text-gray-500">This Month's Appointments</p>
                   </div>
                 </div>
               </div>
@@ -205,66 +294,78 @@ export default function DoctorDashboard() {
                     <Users size={24} className="text-green-500" />
                   </div>
                   <div className="ml-4">
-                    <h2 className="text-2xl font-bold">45</h2>
-                    <p className="text-sm text-gray-500">Active Patients</p>
+                    <h2 className="text-2xl font-bold">{dashboardData.totalPatients}</h2>
+                    <p className="text-sm text-gray-500">Total Patients</p>
                   </div>
                 </div>
               </div>
               <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className="flex items-center">
                   <div className="bg-purple-100 p-3 rounded-full">
-                    <FileText size={24} className="text-purple-500" />
+                    <MessageSquare size={24} className="text-purple-500" />
                   </div>
                   <div className="ml-4">
-                    <h2 className="text-2xl font-bold">28</h2>
-                    <p className="text-sm text-gray-500">Pending Prescriptions</p>
+                    <h2 className="text-2xl font-bold">{dashboardData.unreadMessages}</h2>
+                    <p className="text-sm text-gray-500">Unread Messages</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Upcoming Appointments */}
+            {/* Upcoming Appointments (Next 7 Days) */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Upcoming Appointments</h3>
+              <h3 className="text-lg font-medium mb-4">Upcoming Appointments (Next 7 Days)</h3>
               <div className="space-y-4">
-                {[1, 2, 3].map((appointment) => (
-                  <div key={appointment} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-500">JD</span>
+                {upcomingAppointments
+                  .filter(appointment => {
+                    const appointmentDate = new Date(appointment.scheduledFor);
+                    const today = new Date();
+                    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                    return appointmentDate > today && appointmentDate <= nextWeek;
+                  })
+                  .map((appointment) => (
+                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">
+                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                          </span>
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">{appointment.patientName}</p>
+                          <p className="text-sm text-gray-500">{appointment.type}</p>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <p className="font-medium">John Doe</p>
-                        <p className="text-sm text-gray-500">General Checkup</p>
+                      <div className="text-right">
+                        <p className="font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">10:00 AM</p>
-                      <p className="text-sm text-gray-500">Today</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
 
-            {/* Recent Consultations */}
+            {/* Notifications Feed */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Recent Consultations</h3>
+              <h3 className="text-lg font-medium mb-4">Notifications</h3>
               <div className="space-y-4">
-                {[1, 2, 3].map((consultation) => (
-                  <div key={consultation} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-500">JD</span>
+                {notifications.map((notification) => (
+                  <div 
+                    key={notification.id} 
+                    className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} ${
+                      !notification.read ? (darkMode ? 'border-l-4 border-blue-500' : 'border-l-4 border-blue-400') : ''
+                    }`}
+                    onClick={() => markNotificationAsRead(notification.id)}
+                  >
+                    <div className="flex items-start">
+                      <div className={`flex-shrink-0 ${darkMode ? 'bg-blue-900' : 'bg-blue-100'} p-2 rounded-full`}>
+                        <Bell className={`h-4 w-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                       </div>
-                      <div className="ml-4">
-                        <p className="font-medium">John Doe</p>
-                        <p className="text-sm text-gray-500">Follow-up Consultation</p>
+                      <div className="ml-3">
+                        <p className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{notification.title}</p>
+                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{notification.message}</p>
+                        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>{notification.time}</p>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">2 days ago</p>
-                      <p className="text-sm text-green-500">Completed</p>
                     </div>
                   </div>
                 ))}
@@ -275,40 +376,147 @@ export default function DoctorDashboard() {
       case 'appointments':
         return (
           <div className="space-y-6">
-            {/* Calendar View */}
+            {/* Filters */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Appointment Calendar</h3>
-              {/* Add calendar component here */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Date</label>
+                  <input 
+                    type="date" 
+                    className="w-full rounded-md border-gray-300 shadow-sm"
+                    value={appointmentFilters.date}
+                    onChange={(e) => setAppointmentFilters(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Patient</label>
+                  <input 
+                    type="text" 
+                    placeholder="Search patient..."
+                    className="w-full rounded-md border-gray-300 shadow-sm"
+                    value={appointmentFilters.patient}
+                    onChange={(e) => setAppointmentFilters(prev => ({ ...prev, patient: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+                  <select 
+                    className="w-full rounded-md border-gray-300 shadow-sm"
+                    value={appointmentFilters.status}
+                    onChange={(e) => setAppointmentFilters(prev => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
-            {/* Appointment List */}
+            {/* Upcoming Appointments */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Appointment List</h3>
+              <h3 className="text-lg font-medium mb-4">Upcoming Appointments</h3>
               <div className="space-y-4">
-                {[1, 2, 3].map((appointment) => (
-                  <div key={appointment} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-500">JD</span>
+                {upcomingAppointments
+                  .filter(appointment => {
+                    const matchesDate = !appointmentFilters.date || 
+                      new Date(appointment.scheduledFor).toDateString() === new Date(appointmentFilters.date).toDateString();
+                    const matchesPatient = !appointmentFilters.patient || 
+                      appointment.patientName.toLowerCase().includes(appointmentFilters.patient.toLowerCase());
+                    const matchesStatus = appointmentFilters.status === 'all' || 
+                      appointment.status === appointmentFilters.status;
+                    return matchesDate && matchesPatient && matchesStatus;
+                  })
+                  .map((appointment) => (
+                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">
+                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                          </span>
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">{appointment.patientName}</p>
+                          <p className="text-sm text-gray-500">{appointment.type}</p>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <p className="font-medium">John Doe</p>
-                        <p className="text-sm text-gray-500">General Checkup</p>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <p className="font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
+                          <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        </div>
+                        <button 
+                          className={`px-4 py-2 rounded ${
+                            new Date(appointment.scheduledFor).getTime() - Date.now() <= 600000
+                              ? 'bg-green-500 text-white hover:bg-green-600'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                          disabled={new Date(appointment.scheduledFor).getTime() - Date.now() > 600000}
+                          onClick={() => handleJoinVideoCall(appointment._id)}
+                        >
+                          Join Call
+                        </button>
+                        <button 
+                          className="p-2 text-blue-500 hover:text-blue-600"
+                          onClick={() => handleViewPatientDetails(appointment.patientId)}
+                        >
+                          <User size={20} />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
-                        Accept
-                      </button>
-                      <button className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
-                        Reschedule
-                      </button>
-                      <button className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">
-                        Cancel
-                      </button>
+                  ))}
+              </div>
+            </div>
+
+            {/* Past Appointments */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className="text-lg font-medium mb-4">Past Appointments</h3>
+              <div className="space-y-4">
+                {pastAppointments
+                  .filter(appointment => {
+                    const matchesDate = !appointmentFilters.date || 
+                      new Date(appointment.scheduledFor).toDateString() === new Date(appointmentFilters.date).toDateString();
+                    const matchesPatient = !appointmentFilters.patient || 
+                      appointment.patientName.toLowerCase().includes(appointmentFilters.patient.toLowerCase());
+                    const matchesStatus = appointmentFilters.status === 'all' || 
+                      appointment.status === appointmentFilters.status;
+                    return matchesDate && matchesPatient && matchesStatus;
+                  })
+                  .map((appointment) => (
+                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">
+                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                          </span>
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">{appointment.patientName}</p>
+                          <p className="text-sm text-gray-500">{appointment.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <p className="font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
+                          <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                          <p className={`text-sm ${
+                            appointment.status === 'completed' ? 'text-green-500' :
+                            appointment.status === 'cancelled' ? 'text-red-500' :
+                            'text-yellow-500'
+                          }`}>
+                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                          </p>
+                        </div>
+                        <button 
+                          className="p-2 text-blue-500 hover:text-blue-600"
+                          onClick={() => handleViewPatientDetails(appointment.patientId)}
+                        >
+                          <User size={20} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           </div>
@@ -316,36 +524,125 @@ export default function DoctorDashboard() {
       case 'patients':
         return (
           <div className="space-y-6">
+            {/* Search and Filters */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Search Patients</label>
+                  <div className="relative">
+                    <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'} h-5 w-5`} />
+                    <input
+                      type="text"
+                      placeholder="Search by name..."
+                      className={`pl-10 pr-4 py-2 rounded-md border transition-all duration-300 ${
+                        darkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500' 
+                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-gray-300'
+                      } w-full focus:outline-none`}
+                      value={patientFilters.search}
+                      onChange={(e) => setPatientFilters(prev => ({ ...prev, search: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Visit</label>
+                  <select 
+                    className="w-full rounded-md border-gray-300 shadow-sm"
+                    value={patientFilters.lastVisit}
+                    onChange={(e) => setPatientFilters(prev => ({ ...prev, lastVisit: e.target.value }))}
+                  >
+                    <option value="all">All Time</option>
+                    <option value="week">Last Week</option>
+                    <option value="month">Last Month</option>
+                    <option value="year">Last Year</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                  <select 
+                    className="w-full rounded-md border-gray-300 shadow-sm"
+                    value={patientFilters.sortBy}
+                    onChange={(e) => setPatientFilters(prev => ({ ...prev, sortBy: e.target.value }))}
+                  >
+                    <option value="name">Name</option>
+                    <option value="lastVisit">Last Visit</option>
+                    <option value="age">Age</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
             {/* Patient List */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
               <h3 className="text-lg font-medium mb-4">Patient Records</h3>
               <div className="space-y-4">
-                {[1, 2, 3].map((patient) => (
-                  <div key={patient} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-500">JD</span>
+                {patients
+                  .filter(patient => {
+                    const matchesSearch = !patientFilters.search || 
+                      patient.fullName.toLowerCase().includes(patientFilters.search.toLowerCase());
+                    const matchesLastVisit = patientFilters.lastVisit === 'all' || 
+                      (() => {
+                        const lastVisit = new Date(patient.lastVisit);
+                        const now = new Date();
+                        switch (patientFilters.lastVisit) {
+                          case 'week': return now - lastVisit <= 7 * 24 * 60 * 60 * 1000;
+                          case 'month': return now - lastVisit <= 30 * 24 * 60 * 60 * 1000;
+                          case 'year': return now - lastVisit <= 365 * 24 * 60 * 60 * 1000;
+                          default: return true;
+                        }
+                      })();
+                    return matchesSearch && matchesLastVisit;
+                  })
+                  .sort((a, b) => {
+                    switch (patientFilters.sortBy) {
+                      case 'name': return a.fullName.localeCompare(b.fullName);
+                      case 'lastVisit': return new Date(b.lastVisit) - new Date(a.lastVisit);
+                      case 'age': return b.age - a.age;
+                      default: return 0;
+                    }
+                  })
+                  .map((patient) => (
+                    <div key={patient._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          {patient.profilePicture ? (
+                            <Image 
+                              src={patient.profilePicture} 
+                              alt={patient.fullName} 
+                              width={40} 
+                              height={40} 
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          ) : (
+                            <span className="text-gray-500">
+                              {patient.fullName?.split(' ').map(n => n[0]).join('') || 'P'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">{patient.fullName}</p>
+                          <p className="text-sm text-gray-500">Age: {patient.age}</p>
+                          <p className="text-xs text-gray-400">Last visit: {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'N/A'}</p>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <p className="font-medium">John Doe</p>
-                        <p className="text-sm text-gray-500">Last visit: 2 days ago</p>
-                      </div>
+                      <button 
+                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        onClick={() => handleViewPatientDetails(patient._id)}
+                      >
+                        View Records
+                      </button>
                     </div>
-                    <button className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
-                      View Records
-                    </button>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           </div>
         );
-      case 'prescriptions':
+      case 'medical-records':
         return (
           <div className="space-y-6">
-            {/* New Prescription Form */}
+            {/* New Medical Record Form */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">New Prescription</h3>
+              <h3 className="text-lg font-medium mb-4">New Medical Record</h3>
               <form className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Patient</label>
@@ -354,62 +651,74 @@ export default function DoctorDashboard() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Medication</label>
-                  <input type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                  <label className="block text-sm font-medium text-gray-700">Consultation Date</label>
+                  <input type="date" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Dosage</label>
-                  <input type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                  <label className="block text-sm font-medium text-gray-700">Diagnosis</label>
+                  <textarea className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" rows="3"></textarea>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Instructions</label>
+                  <label className="block text-sm font-medium text-gray-700">Prescription</label>
+                  <textarea className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" rows="3"></textarea>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Treatment Plan</label>
+                  <textarea className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" rows="3"></textarea>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Additional Notes</label>
                   <textarea className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" rows="3"></textarea>
                 </div>
                 <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                  Save Prescription
+                  Save Medical Record
                 </button>
               </form>
             </div>
 
-            {/* Prescription History */}
+            {/* Medical Records List */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Prescription History</h3>
-              <div className="space-y-4">
-                {[1, 2, 3].map((prescription) => (
-                  <div key={prescription} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">John Doe</p>
-                        <p className="text-sm text-gray-500">Amoxicillin 500mg</p>
-                      </div>
-                      <span className="text-sm text-gray-500">2 days ago</span>
-                    </div>
-                    <p className="mt-2 text-sm">Take one tablet twice daily for 7 days</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      case 'calls':
-        return (
-          <div className="space-y-6">
-            {/* Video Call Interface */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Video Consultation</h3>
-              <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <Video size={48} className="mx-auto text-gray-400" />
-                  <p className="mt-2 text-gray-500">Waiting for patient to join...</p>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Medical Records</h3>
+                <div className="relative">
+                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'} h-5 w-5`} />
+                  <input
+                    type="text"
+                    placeholder="Search records..."
+                    className={`pl-10 pr-4 py-2 rounded-full border transition-all duration-300 ${
+                      darkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500' 
+                        : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-gray-300'
+                    } w-64 focus:outline-none`}
+                  />
                 </div>
               </div>
-              <div className="mt-4 flex justify-center space-x-4">
-                <button className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600">
-                  <Video size={24} />
-                </button>
-                <button className="p-3 bg-green-500 text-white rounded-full hover:bg-green-600">
-                  <MessageSquare size={24} />
-                </button>
+              <div className="space-y-4">
+                {[1, 2, 3].map((record) => (
+                  <div key={record} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500">JD</span>
+                      </div>
+                      <div className="ml-4">
+                        <p className="font-medium">John Doe</p>
+                        <p className="text-sm text-gray-500">Diagnosis: Common Cold</p>
+                        <p className="text-xs text-gray-400">Consultation Date: 2024-03-15</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button className="p-2 text-blue-500 hover:text-blue-600">
+                        <FileText size={20} />
+                      </button>
+                      <button className="p-2 text-yellow-500 hover:text-yellow-600">
+                        <Edit size={20} />
+                      </button>
+                      <button className="p-2 text-red-500 hover:text-red-600">
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -533,28 +842,15 @@ export default function DoctorDashboard() {
             
             {/* Prescriptions */}
             <div 
-              onClick={() => handleNavigation('prescriptions')}
+              onClick={() => handleNavigation('medical-records')}
               className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                activeSection === 'prescriptions' 
+                activeSection === 'medical-records' 
                   ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
                   : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
               }`}
             >
               <FileText size={20} />
-              {!collapsed && <span className="ml-3">Prescriptions</span>}
-            </div>
-            
-            {/* Video Calls */}
-            <div 
-              onClick={() => handleNavigation('calls')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                activeSection === 'calls' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <Video size={20} />
-              {!collapsed && <span className="ml-3">Consultations</span>}
+              {!collapsed && <span className="ml-3">Medical Records</span>}
             </div>
             
             {/* Messages */}
@@ -718,23 +1014,6 @@ export default function DoctorDashboard() {
                   darkMode ? 'bg-gray-800' : 'bg-white'
                 }`}>
                   <div className="py-1">
-                    <HMenu.Item>
-                      {({ active }) => (
-                        <a
-                          href="/dashboard/doctor/profile"
-                          className={`${
-                            active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
-                          } block px-4 py-2 text-sm rounded-t-lg ${
-                            darkMode ? 'text-gray-200' : 'text-gray-700'
-                          }`}
-                        >
-                          <div className="flex items-center">
-                            <User className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                            Your Profile
-                          </div>
-                        </a>
-                      )}
-                    </HMenu.Item>
                     <HMenu.Item>
                       {({ active }) => (
                         <a

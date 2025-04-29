@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/db';
+import Message from '@/models/Message';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import { getIO } from '@/lib/socket';
 import { ObjectId } from 'mongodb';
 
@@ -13,34 +14,44 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    await connectToDatabase();
+    
     const { searchParams } = new URL(request.url);
-    const recipientId = searchParams.get('recipientId');
-
-    if (!recipientId) {
+    const receiverId = searchParams.get('receiverId');
+    const receiverType = searchParams.get('receiverType');
+    
+    if (!receiverId || !receiverType) {
       return NextResponse.json(
-        { error: 'Recipient ID is required' },
+        { error: 'Receiver ID and type are required' },
         { status: 400 }
       );
     }
-
-    const { db } = await connectToDatabase();
-
-    const messages = await db.collection('messages')
-      .find({
-        $or: [
-          { senderId: session.user.id, recipientId },
-          { senderId: recipientId, recipientId: session.user.id }
-        ]
-      })
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .toArray();
-
+    
+    const messages = await Message.find({
+      $or: [
+        {
+          senderId: session.user.id,
+          senderType: 'User',
+          receiverId,
+          receiverType
+        },
+        {
+          senderId: receiverId,
+          senderType: receiverType,
+          receiverId: session.user.id,
+          receiverType: 'User'
+        }
+      ]
+    })
+    .sort({ createdAt: 1 })
+    .populate('senderId', 'name profilePicture')
+    .populate('receiverId', 'name profilePicture');
+    
     return NextResponse.json(messages);
   } catch (error) {
-    console.error('Get messages error:', error);
+    console.error('Error fetching messages:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch messages' },
       { status: 500 }
     );
   }
@@ -54,45 +65,31 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { recipientId, content } = await request.json();
-
-    if (!recipientId || !content) {
-      return NextResponse.json(
-        { error: 'Recipient ID and content are required' },
-        { status: 400 }
-      );
-    }
-
-    const { db } = await connectToDatabase();
-
-    const message = {
+    await connectToDatabase();
+    
+    const body = await request.json();
+    const { receiverId, receiverType, content, attachments } = body;
+    
+    const message = new Message({
       senderId: session.user.id,
-      recipientId,
+      senderType: 'User',
+      receiverId,
+      receiverType,
       content,
-      createdAt: new Date(),
-      read: false
-    };
-
-    const result = await db.collection('messages').insertOne(message);
-
-    // Send real-time notification to recipient
-    const io = getIO();
-    io.to(recipientId).emit('new_message', {
-      id: result.insertedId,
-      senderId: session.user.id,
-      senderName: session.user.name,
-      content,
-      createdAt: message.createdAt
+      attachments: attachments || []
     });
-
-    return NextResponse.json(
-      { message: 'Message sent successfully', id: result.insertedId },
-      { status: 201 }
-    );
+    
+    await message.save();
+    
+    // Emit real-time message using Socket.io
+    const io = getIO();
+    io.to(receiverId).emit('new_message', message);
+    
+    return NextResponse.json(message);
   } catch (error) {
-    console.error('Send message error:', error);
+    console.error('Error sending message:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to send message' },
       { status: 500 }
     );
   }

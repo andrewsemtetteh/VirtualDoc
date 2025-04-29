@@ -12,7 +12,7 @@ export default function BookingModal({ isOpen, onClose, doctor }) {
 
   useEffect(() => {
     if (doctor && selectedDate) {
-      const dateAvailability = doctor.availability.find(a => a.date === selectedDate);
+      const dateAvailability = doctor?.availability?.find(a => a.date === selectedDate);
       if (dateAvailability) {
         setAvailableSlots(dateAvailability.slots);
       } else {

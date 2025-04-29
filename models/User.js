@@ -23,8 +23,8 @@ const userSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'suspended'],
-    default: 'active',
+    enum: ['active', 'pending', 'rejected', 'suspended'],
+    default: 'pending',
   },
   profilePicture: {
     type: String,
@@ -52,6 +52,20 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: function() { return this.role === 'doctor'; }
   },
+  rating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
+  },
+  ratingCount: {
+    type: Number,
+    default: 0
+  },
+  totalRatings: {
+    type: Number,
+    default: 0
+  },
   // Patient specific fields
   dateOfBirth: {
     type: Date,
@@ -59,9 +73,14 @@ const userSchema = new mongoose.Schema({
   },
   gender: {
     type: String,
-    enum: ['male', 'female'],
+    enum: ['male', 'female', 'other'],
     required: function() { return this.role === 'patient'; }
   },
+  medicalHistory: [{
+    condition: String,
+    diagnosedDate: Date,
+    notes: String
+  }],
   lastLogin: {
     type: Date,
     default: null,
@@ -73,6 +92,14 @@ const userSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now,
+  },
+  statusMessage: {
+    type: String,
+    default: ''
+  },
+  approvedAt: {
+    type: Date,
+    default: null
   }
 });
 
