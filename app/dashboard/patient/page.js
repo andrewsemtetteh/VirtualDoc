@@ -36,6 +36,9 @@ export default function PatientDashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   const notificationsRef = useRef(null);
   const profileRef = useRef(null);
@@ -46,6 +49,46 @@ export default function PatientDashboard() {
   const [doctorSearch, setDoctorSearch] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
+
+  const fetchAppointments = async () => {
+    try {
+      if (!session?.user?.id) {
+        console.error('No user session found');
+        return;
+      }
+
+      // Fetch appointments for the current patient
+      const response = await axios.get(`/api/appointments`);
+      const appointmentsWithDoctorInfo = await Promise.all(
+        response.data.map(async (appointment) => {
+          try {
+            const doctorResponse = await axios.get(`/api/doctors/${appointment.doctorId}`);
+            // Combine date and time into a single scheduledFor field for sorting
+            const scheduledFor = new Date(`${appointment.date}T${appointment.time}`);
+            return {
+              ...appointment,
+              scheduledFor,
+              doctorName: doctorResponse.data.fullName,
+              specialty: doctorResponse.data.specialization
+            };
+          } catch (error) {
+            console.error('Error fetching doctor info:', error);
+            return appointment;
+          }
+        })
+      );
+      
+      // Sort appointments by date in ascending order
+      const sortedAppointments = appointmentsWithDoctorInfo.sort((a, b) => 
+        a.scheduledFor - b.scheduledFor
+      );
+      
+      setAppointments(sortedAppointments);
+    } catch (err) {
+      console.error('Error fetching appointments:', err);
+      toast.error('Failed to fetch appointments');
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -188,31 +231,6 @@ export default function PatientDashboard() {
   }, []);
 
   useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        const response = await axios.get('/api/appointments');
-        const appointmentsWithDoctorInfo = await Promise.all(
-          response.data.map(async (appointment) => {
-            try {
-              const doctorResponse = await axios.get(`/api/doctors/${appointment.doctorId}`);
-              return {
-                ...appointment,
-                doctorName: doctorResponse.data.fullName,
-                specialty: doctorResponse.data.specialization
-              };
-            } catch (error) {
-              console.error('Error fetching doctor info:', error);
-              return appointment;
-            }
-          })
-        );
-        setAppointments(appointmentsWithDoctorInfo);
-      } catch (err) {
-        console.error('Error fetching appointments:', err);
-        toast.error('Failed to fetch appointments');
-      }
-    };
-
     if (session?.user) {
       fetchAppointments();
     }
@@ -275,19 +293,27 @@ export default function PatientDashboard() {
         // Update local state with the new appointment
         const newAppointment = {
           ...response.data.appointment,
+          scheduledFor: new Date(`${formData.date}T${formData.time}`),
           doctorName: selectedDoctor.fullName,
           specialty: selectedDoctor.specialization
         };
 
-        setAppointments(prev => [...prev, newAppointment]);
+        // Add the new appointment to the list and sort again
+        setAppointments(prev => {
+          const updatedAppointments = [...prev, newAppointment];
+          return updatedAppointments.sort((a, b) => 
+            a.scheduledFor - b.scheduledFor
+          );
+        });
+        
         setShowBookingModal(false);
         setSelectedDoctor(null);
 
         // Show success notification
         toast.success('Appointment booked successfully!');
 
-        // Refresh the appointments list
-        fetchAppointments();
+        // Refresh the appointments list to ensure we have the latest data
+        await fetchAppointments();
       } else {
         throw new Error(response.data.error || 'Failed to book appointment');
       }
@@ -299,35 +325,48 @@ export default function PatientDashboard() {
     }
   };
 
-  const handleReschedule = async (appointmentId, newDate, newTime) => {
+  const handleReschedule = async (formData) => {
     try {
-      const response = await axios.put(`/api/appointments/${appointmentId}`, {
-        date: newDate,
-        time: newTime
+      const response = await axios.patch(`/api/appointments/${selectedAppointment._id}`, {
+        date: formData.date,
+        time: formData.time,
+        reason: formData.reason,
+        status: 'rescheduled'
       });
 
-      setAppointments(prev => 
-        prev.map(app => 
-          app._id === appointmentId ? response.data : app
-        )
-      );
-
-      toast.success('Appointment rescheduled successfully!');
+      if (response.data.success) {
+        setAppointments(prev => 
+          prev.map(app => 
+            app._id === selectedAppointment._id ? response.data.appointment : app
+          )
+        );
+        setShowRescheduleModal(false);
+        setSelectedAppointment(null);
+        toast.success('Appointment rescheduled successfully!');
+      }
     } catch (err) {
       console.error('Error rescheduling appointment:', err);
       toast.error(err.response?.data?.error || 'Failed to reschedule appointment');
     }
   };
 
-  const handleCancel = async (appointmentId) => {
+  const handleCancel = async (reason) => {
     try {
-      await axios.delete(`/api/appointments/${appointmentId}`);
-      
-      setAppointments(prev => 
-        prev.filter(app => app._id !== appointmentId)
-      );
+      const response = await axios.patch(`/api/appointments/${selectedAppointment._id}`, {
+        status: 'cancelled',
+        cancellationReason: reason
+      });
 
-      toast.success('Appointment cancelled successfully!');
+      if (response.data.success) {
+        setAppointments(prev => 
+          prev.map(app => 
+            app._id === selectedAppointment._id ? response.data.appointment : app
+          )
+        );
+        setShowCancelModal(false);
+        setSelectedAppointment(null);
+        toast.success('Appointment cancelled successfully!');
+      }
     } catch (err) {
       console.error('Error cancelling appointment:', err);
       toast.error(err.response?.data?.error || 'Failed to cancel appointment');
@@ -648,7 +687,26 @@ export default function PatientDashboard() {
                       <div className="text-right">
                         <p className="font-medium">{formatTime(appointment.scheduledFor)}</p>
                         <p className="text-sm text-gray-500">{formatDate(appointment.scheduledFor)}</p>
-                        <p className="text-sm text-blue-500">{appointment.type}</p>
+                        <div className="flex space-x-2 mt-2">
+                          <button
+                            onClick={() => {
+                              setSelectedAppointment(appointment);
+                              setShowRescheduleModal(true);
+                            }}
+                            className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                          >
+                            Reschedule
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedAppointment(appointment);
+                              setShowCancelModal(true);
+                            }}
+                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -657,6 +715,94 @@ export default function PatientDashboard() {
                 )}
               </div>
             </div>
+
+            {/* Reschedule Modal */}
+            {showRescheduleModal && selectedAppointment && (
+              <BookingModal
+                doctor={selectedAppointment}
+                darkMode={darkMode}
+                onClose={() => {
+                  setShowRescheduleModal(false);
+                  setSelectedAppointment(null);
+                }}
+                onSubmit={handleReschedule}
+                isRescheduling={true}
+              />
+            )}
+
+            {/* Cancel Modal */}
+            {showCancelModal && selectedAppointment && (
+              <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                <div className={`rounded-xl p-6 max-w-md w-full ${
+                  darkMode ? 'bg-gray-800/95' : 'bg-white/95'
+                } shadow-2xl backdrop-blur-sm`}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Cancel Appointment
+                    </h2>
+                    <button
+                      onClick={() => {
+                        setShowCancelModal(false);
+                        setSelectedAppointment(null);
+                      }}
+                      className={`p-2 rounded-full ${
+                        darkMode 
+                          ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const reason = e.target.reason.value;
+                    handleCancel(reason);
+                  }} className="space-y-4">
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        Reason for Cancellation
+                      </label>
+                      <textarea
+                        name="reason"
+                        required
+                        placeholder="Please provide a reason for cancellation"
+                        rows="3"
+                        className={`w-full p-3 rounded-lg border ${
+                          darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
+                            : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCancelModal(false);
+                          setSelectedAppointment(null);
+                        }}
+                        className={`px-4 py-2 rounded-lg font-medium ${
+                          darkMode
+                            ? 'text-gray-300 bg-gray-700 hover:bg-gray-600'
+                            : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+                        }`}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700"
+                      >
+                        Confirm Cancellation
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         );
       case 'consultations':

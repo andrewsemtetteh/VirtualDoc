@@ -1,17 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Calendar, Clock, FileText, MessageSquare } from 'lucide-react';
 
-export default function BookingModal({ doctor, onClose, onSubmit, darkMode }) {
+export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRescheduling, currentAppointment }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    date: '',
-    time: '',
-    reason: '',
-    notes: ''
+    date: currentAppointment?.date || '',
+    time: currentAppointment?.time || '',
+    reason: currentAppointment?.reason || '',
+    notes: currentAppointment?.notes || ''
   });
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,7 +34,6 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode }) {
 
     try {
       await onSubmit(formData);
-      // If successful, onSubmit will handle the modal closing
     } catch (err) {
       setError(err.message || 'Failed to book appointment');
     } finally {
@@ -37,14 +50,17 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className={`rounded-xl p-6 max-w-md w-full ${
-        darkMode ? 'bg-gray-800' : 'bg-white'
-      } shadow-2xl`}>
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div 
+        ref={modalRef}
+        className={`rounded-xl p-6 max-w-md w-full ${
+          darkMode ? 'bg-gray-800/95' : 'bg-white/95'
+        } shadow-2xl backdrop-blur-sm`}
+      >
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              Book Appointment
+              {isRescheduling ? 'Reschedule Appointment' : 'Book Appointment'}
             </h2>
             <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               with Dr. {doctor.fullName}
@@ -63,6 +79,27 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode }) {
           </button>
         </div>
 
+        {isRescheduling && currentAppointment && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            darkMode ? 'bg-gray-700' : 'bg-gray-100'
+          }`}>
+            <h3 className={`text-sm font-medium mb-2 ${
+              darkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>Current Appointment Details</h3>
+            <div className="space-y-2">
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <span className="font-medium">Date:</span> {new Date(currentAppointment.date).toLocaleDateString()}
+              </p>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <span className="font-medium">Time:</span> {currentAppointment.time}
+              </p>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <span className="font-medium">Reason:</span> {currentAppointment.reason}
+              </p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className={`block text-sm font-medium mb-2 ${
@@ -70,7 +107,7 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode }) {
             }`}>
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2" />
-                Date
+                {isRescheduling ? 'New Date' : 'Date'}
               </div>
             </label>
             <input
@@ -95,7 +132,7 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode }) {
             }`}>
               <div className="flex items-center">
                 <Clock className="h-4 w-4 mr-2" />
-                Time
+                {isRescheduling ? 'New Time' : 'Time'}
               </div>
             </label>
             <input
@@ -119,7 +156,7 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode }) {
             }`}>
               <div className="flex items-center">
                 <FileText className="h-4 w-4 mr-2" />
-                Reason for Visit
+                {isRescheduling ? 'Reason for Rescheduling' : 'Reason for Visit'}
               </div>
             </label>
             <input
@@ -129,7 +166,7 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode }) {
               onChange={handleChange}
               required
               disabled={loading}
-              placeholder="Enter reason for visit"
+              placeholder={isRescheduling ? "Enter reason for rescheduling" : "Enter reason for visit"}
               className={`w-full p-3 rounded-lg border ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
@@ -138,29 +175,31 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode }) {
             />
           </div>
 
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${
-              darkMode ? 'text-gray-300' : 'text-gray-700'
-            }`}>
-              <div className="flex items-center">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Additional Notes (Optional)
-              </div>
-            </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              disabled={loading}
-              placeholder="Enter any additional notes"
-              rows="3"
-              className={`w-full p-3 rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
-                  : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            />
-          </div>
+          {!isRescheduling && (
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${
+                darkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                <div className="flex items-center">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Additional Notes (Optional)
+                </div>
+              </label>
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                disabled={loading}
+                placeholder="Enter any additional notes"
+                rows="3"
+                className={`w-full p-3 rounded-lg border ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
+                    : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+            </div>
+          )}
 
           {error && (
             <div className="text-red-500 text-sm p-2 bg-red-100 rounded">
@@ -184,9 +223,11 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode }) {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+              className={`px-4 py-2 rounded-lg font-medium text-white ${
+                isRescheduling ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'
+              } disabled:opacity-50`}
             >
-              {loading ? 'Booking...' : 'Book Appointment'}
+              {loading ? (isRescheduling ? 'Rescheduling...' : 'Booking...') : (isRescheduling ? 'Reschedule' : 'Book Appointment')}
             </button>
           </div>
         </form>
