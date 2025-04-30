@@ -52,6 +52,15 @@ export default function PatientDashboard() {
 
   const fetchAppointments = async () => {
     try {
+      if (status === 'loading') {
+        return; // Wait for session to load
+      }
+
+      if (status === 'unauthenticated') {
+        router.push('/login');
+        return;
+      }
+
       if (!session?.user?.id) {
         console.error('No user session found');
         return;
@@ -91,18 +100,29 @@ export default function PatientDashboard() {
   };
 
   useEffect(() => {
-    setMounted(true);
-    const savedTheme = localStorage.getItem('theme');
-    const savedSection = localStorage.getItem('patientSection');
-    const savedCollapsed = localStorage.getItem('patientNavCollapsed');
-    setDarkMode(savedTheme === 'dark');
-    if (savedSection) {
-      setActiveSection(savedSection);
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
     }
-    if (savedCollapsed) {
-      setCollapsed(savedCollapsed === 'true');
+
+    if (status === 'authenticated') {
+      setMounted(true);
+      const savedTheme = localStorage.getItem('theme');
+      const savedSection = localStorage.getItem('patientSection');
+      const savedCollapsed = localStorage.getItem('patientNavCollapsed');
+      setDarkMode(savedTheme === 'dark');
+      if (savedSection) {
+        setActiveSection(savedSection);
+      }
+      if (savedCollapsed) {
+        setCollapsed(savedCollapsed === 'true');
+      }
+      fetchPatientProfile();
+      fetchDashboardData();
+      fetchDoctors();
+      fetchAppointments();
     }
-  }, []);
+  }, [status, session]);
 
   useEffect(() => {
     if (mounted) {
