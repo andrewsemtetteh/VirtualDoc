@@ -102,7 +102,7 @@ export default function Dashboard({ darkMode }) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium">
+                  <p className="text-lg font-medium">
                     {format(new Date(appointment.date), 'MMM d, yyyy')}
                   </p>
                   <p className="text-sm text-gray-500">{appointment.time}</p>

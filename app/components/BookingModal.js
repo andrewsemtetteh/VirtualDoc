@@ -7,9 +7,10 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    date: currentAppointment?.date || '',
+    date: currentAppointment?.date ? new Date(currentAppointment.date).toISOString().split('T')[0] : '',
     time: currentAppointment?.time || '',
-    reason: currentAppointment?.reason || '',
+    reason: isRescheduling ? '' : (currentAppointment?.reason || ''),
+    rescheduleReason: '',
     notes: currentAppointment?.notes || ''
   });
   const modalRef = useRef(null);
@@ -30,12 +31,31 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError(null);
 
     try {
-      await onSubmit(formData);
+      const response = await fetch('/api/appointments', {
+        method: isRescheduling ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          doctorId: doctor._id,
+          appointmentId: isRescheduling ? currentAppointment._id : undefined,
+          reason: isRescheduling ? formData.rescheduleReason : formData.reason
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to book appointment');
+      }
+
+      const data = await response.json();
+      onSubmit(data);
+      onClose();
     } catch (err) {
-      setError(err.message || 'Failed to book appointment');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -63,7 +83,7 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
               {isRescheduling ? 'Reschedule Appointment' : 'Book Appointment'}
             </h2>
             <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              with Dr. {doctor.fullName}
+              with Dr. {doctor?.fullName || doctor?.doctorName || 'Unknown Doctor'}
             </p>
           </div>
           <button
@@ -88,10 +108,17 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
             }`}>Current Appointment Details</h3>
             <div className="space-y-2">
               <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                <span className="font-medium">Date:</span> {new Date(currentAppointment.date).toLocaleDateString()}
+                <span className="font-medium">Date:</span> {new Date(currentAppointment.date).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
               </p>
               <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                <span className="font-medium">Time:</span> {currentAppointment.time}
+                <span className="font-medium">Time:</span> {new Date(`2000-01-01T${currentAppointment.time}`).toLocaleTimeString('en-US', { 
+                  hour: 'numeric', 
+                  minute: '2-digit' 
+                })}
               </p>
               <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 <span className="font-medium">Reason:</span> {currentAppointment.reason}
@@ -161,8 +188,8 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
             </label>
             <input
               type="text"
-              name="reason"
-              value={formData.reason}
+              name={isRescheduling ? "rescheduleReason" : "reason"}
+              value={isRescheduling ? formData.rescheduleReason : formData.reason}
               onChange={handleChange}
               required
               disabled={loading}

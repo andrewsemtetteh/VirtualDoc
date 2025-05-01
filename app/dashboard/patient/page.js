@@ -50,6 +50,46 @@ export default function PatientDashboard() {
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
 
+  const fetchDoctors = async () => {
+    try {
+      const response = await axios.get('/api/doctors');
+      setDoctors(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
+      setError('Failed to fetch doctors');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    try {
+      const response = await fetch('/api/patient/dashboard');
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
+      const data = await response.json();
+      setDashboardData(data);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  };
+
+  const fetchPatientProfile = async () => {
+    try {
+      const response = await fetch('/api/patient/profile');
+      if (!response.ok) {
+        throw new Error('Failed to fetch patient profile');
+      }
+      const data = await response.json();
+      setPatientProfile(data);
+    } catch (error) {
+      console.error('Error fetching patient profile:', error);
+      setError('Failed to load patient profile');
+    }
+  };
+
   const fetchAppointments = async () => {
     try {
       if (status === 'loading') {
@@ -67,7 +107,11 @@ export default function PatientDashboard() {
       }
 
       // Fetch appointments for the current patient
-      const response = await axios.get(`/api/appointments`);
+      const response = await axios.get(`/api/appointments?patientId=${session.user.id}`);
+      if (!response.data) {
+        throw new Error('No appointments data received');
+      }
+
       const appointmentsWithDoctorInfo = await Promise.all(
         response.data.map(async (appointment) => {
           try {
@@ -120,6 +164,11 @@ export default function PatientDashboard() {
       fetchPatientProfile();
       fetchDashboardData();
       fetchDoctors();
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.id) {
       fetchAppointments();
     }
   }, [status, session]);
@@ -145,83 +194,6 @@ export default function PatientDashboard() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
-
-  useEffect(() => {
-    const fetchPatientProfile = async () => {
-      try {
-        const response = await fetch('/api/patient/profile');
-        const data = await response.json();
-        
-        if (!response.ok) {
-          console.error('Profile fetch error:', data.error || 'Unknown error', data.sessionData || '');
-          setPatientProfile({
-            fullName: session?.user?.name || 'Patient',
-            patientId: 'Not Available',
-            memberSince: new Date().getFullYear(),
-            profilePicture: session?.user?.image || null
-          });
-          return;
-        }
-        
-        const profileData = {
-          fullName: data.fullName || session?.user?.name || 'Patient',
-          patientId: data.patientId || 'Not Available',
-          memberSince: data.memberSince || new Date().getFullYear(),
-          profilePicture: data.profilePicture || session?.user?.image || null
-        };
-        
-        setPatientProfile(profileData);
-      } catch (error) {
-        console.error('Error fetching patient profile:', error);
-        setPatientProfile({
-          fullName: session?.user?.name || 'Patient',
-          patientId: 'Not Available',
-          memberSince: new Date().getFullYear(),
-          profilePicture: session?.user?.image || null
-        });
-      }
-    };
-
-    if (session?.user && status === 'authenticated') {
-      fetchPatientProfile();
-    }
-  }, [session, status]);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const response = await fetch('/api/patient/dashboard');
-        if (!response.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
-        const data = await response.json();
-        setDashboardData(data);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      }
-    };
-
-    if (session?.user) {
-      fetchDashboardData();
-    }
-  }, [session]);
-
-  useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        const response = await axios.get('/api/doctors');
-        setDoctors(response.data);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching doctors:', err);
-        setError('Failed to fetch doctors');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDoctors();
   }, []);
 
   useEffect(() => {
@@ -253,6 +225,12 @@ export default function PatientDashboard() {
   useEffect(() => {
     if (session?.user) {
       fetchAppointments();
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (session?.user) {
+      fetchDashboardData();
     }
   }, [session]);
 
@@ -608,8 +586,8 @@ export default function PatientDashboard() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{formatTime(appointment.scheduledFor)}</p>
-                        <p className="text-sm text-gray-500">{formatDate(appointment.scheduledFor)}</p>
+                        <p className="text-lg font-medium">{formatDate(appointment.scheduledFor)}</p>
+                        <p className="text-sm text-gray-500">{formatTime(appointment.scheduledFor)}</p>
                         <p className="text-sm text-blue-500">{appointment.type}</p>
                       </div>
                     </div>
@@ -705,8 +683,8 @@ export default function PatientDashboard() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{formatTime(appointment.scheduledFor)}</p>
-                        <p className="text-sm text-gray-500">{formatDate(appointment.scheduledFor)}</p>
+                        <p className="text-lg font-medium">{formatDate(appointment.scheduledFor)}</p>
+                        <p className="text-sm text-gray-500">{formatTime(appointment.scheduledFor)}</p>
                         <div className="flex space-x-2 mt-2">
                           <button
                             onClick={() => {
@@ -739,7 +717,10 @@ export default function PatientDashboard() {
             {/* Reschedule Modal */}
             {showRescheduleModal && selectedAppointment && (
               <BookingModal
-                doctor={selectedAppointment}
+                doctor={{
+                  fullName: selectedAppointment.doctorName,
+                  specialization: selectedAppointment.specialty
+                }}
                 darkMode={darkMode}
                 onClose={() => {
                   setShowRescheduleModal(false);
@@ -747,6 +728,7 @@ export default function PatientDashboard() {
                 }}
                 onSubmit={handleReschedule}
                 isRescheduling={true}
+                currentAppointment={selectedAppointment}
               />
             )}
 

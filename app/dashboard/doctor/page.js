@@ -255,8 +255,8 @@ export default function DoctorDashboard() {
                       </div>
                       <div className="flex items-center space-x-4">
                         <div className="text-right">
-                          <p className="font-medium">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                          <p className="text-sm text-gray-500">Today</p>
+                          <p className="text-lg font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
+                          <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                         <button 
                           className={`px-4 py-2 rounded ${
@@ -337,7 +337,7 @@ export default function DoctorDashboard() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
+                        <p className="text-lg font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
                         <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </div>
@@ -443,7 +443,7 @@ export default function DoctorDashboard() {
                       </div>
                       <div className="flex items-center space-x-4">
                         <div className="text-right">
-                          <p className="font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
+                          <p className="text-lg font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
                           <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                         <button 
@@ -496,24 +496,16 @@ export default function DoctorDashboard() {
                           <p className="text-sm text-gray-500">{appointment.type}</p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <p className="font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
-                          <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                          <p className={`text-sm ${
-                            appointment.status === 'completed' ? 'text-green-500' :
-                            appointment.status === 'cancelled' ? 'text-red-500' :
-                            'text-yellow-500'
-                          }`}>
-                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                          </p>
-                        </div>
-                        <button 
-                          className="p-2 text-blue-500 hover:text-blue-600"
-                          onClick={() => handleViewPatientDetails(appointment.patientId)}
-                        >
-                          <User size={20} />
-                        </button>
+                      <div className="text-right">
+                        <p className="text-lg font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className={`text-sm ${
+                          appointment.status === 'completed' ? 'text-green-500' :
+                          appointment.status === 'cancelled' ? 'text-red-500' :
+                          'text-yellow-500'
+                        }`}>
+                          {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                        </p>
                       </div>
                     </div>
                   ))}

@@ -65,6 +65,8 @@ export default function AdminDashboard() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [suspensionReason, setSuspensionReason] = useState('');
   const [notifications, setNotifications] = useState([]);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
