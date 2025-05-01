@@ -52,9 +52,28 @@ export async function POST(request) {
     const { doctorId, date, time, reason, notes } = body;
 
     // Validate required fields
-    if (!doctorId || !date || !time || !reason) {
+    const requiredFields = ['doctorId', 'date', 'time', 'reason'];
+    const missingFields = requiredFields.filter(field => !body[field]);
+    
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: `Missing required fields: ${missingFields.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    // Validate date format and future date
+    const appointmentDate = new Date(`${date}T${time}`);
+    if (isNaN(appointmentDate.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid date or time format' },
+        { status: 400 }
+      );
+    }
+
+    if (appointmentDate < new Date()) {
+      return NextResponse.json(
+        { error: 'Cannot book appointments in the past' },
         { status: 400 }
       );
     }

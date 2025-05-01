@@ -13,6 +13,7 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
     rescheduleReason: '',
     notes: currentAppointment?.notes || ''
   });
+  const [formErrors, setFormErrors] = useState({});
   const modalRef = useRef(null);
 
   useEffect(() => {
@@ -28,31 +29,47 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
     };
   }, [onClose]);
 
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.date) {
+      errors.date = 'Please select a date';
+    } else if (new Date(formData.date) < new Date()) {
+      errors.date = 'Cannot select a past date';
+    }
+    
+    if (!formData.time) {
+      errors.time = 'Please select a time';
+    }
+    
+    if (!formData.reason?.trim()) {
+      errors.reason = 'Please provide a reason for the appointment';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('/api/appointments', {
-        method: isRescheduling ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          doctorId: doctor._id,
-          appointmentId: isRescheduling ? currentAppointment._id : undefined,
-          reason: isRescheduling ? formData.rescheduleReason : formData.reason
-        }),
-      });
+      const appointmentData = {
+        doctorId: doctor._id,
+        date: formData.date,
+        time: formData.time,
+        reason: formData.reason,
+        notes: formData.notes || null
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to book appointment');
-      }
-
-      const data = await response.json();
-      onSubmit(data);
+      await onSubmit(appointmentData);
       onClose();
     } catch (err) {
       setError(err.message);
@@ -67,6 +84,14 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
       ...prev,
       [name]: value
     }));
+    
+    // Clear error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   return (
@@ -134,7 +159,7 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
             }`}>
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2" />
-                {isRescheduling ? 'New Date' : 'Date'}
+                {isRescheduling ? 'New Date' : 'Date'} *
               </div>
             </label>
             <input
@@ -146,11 +171,15 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
               disabled={loading}
               min={new Date().toISOString().split('T')[0]}
               className={`w-full p-3 rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
-                  : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
+                formErrors.date ? 'border-red-500' : 'border-gray-300'
+              } ${darkMode 
+                ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
+                : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
               } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
+            {formErrors.date && (
+              <p className="mt-1 text-sm text-red-500">{formErrors.date}</p>
+            )}
           </div>
 
           <div>
@@ -159,7 +188,7 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
             }`}>
               <div className="flex items-center">
                 <Clock className="h-4 w-4 mr-2" />
-                {isRescheduling ? 'New Time' : 'Time'}
+                {isRescheduling ? 'New Time' : 'Time'} *
               </div>
             </label>
             <input
@@ -170,11 +199,15 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
               required
               disabled={loading}
               className={`w-full p-3 rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
-                  : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
+                formErrors.time ? 'border-red-500' : 'border-gray-300'
+              } ${darkMode 
+                ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
+                : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
               } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
+            {formErrors.time && (
+              <p className="mt-1 text-sm text-red-500">{formErrors.time}</p>
+            )}
           </div>
 
           <div>
@@ -183,7 +216,7 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
             }`}>
               <div className="flex items-center">
                 <FileText className="h-4 w-4 mr-2" />
-                {isRescheduling ? 'Reason for Rescheduling' : 'Reason for Visit'}
+                {isRescheduling ? 'Reason for Rescheduling' : 'Reason for Visit'} *
               </div>
             </label>
             <input
@@ -195,11 +228,15 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
               disabled={loading}
               placeholder={isRescheduling ? "Enter reason for rescheduling" : "Enter reason for visit"}
               className={`w-full p-3 rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
-                  : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
+                formErrors.reason ? 'border-red-500' : 'border-gray-300'
+              } ${darkMode 
+                ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
+                : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
               } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
+            {formErrors.reason && (
+              <p className="mt-1 text-sm text-red-500">{formErrors.reason}</p>
+            )}
           </div>
 
           {!isRescheduling && (
@@ -234,7 +271,7 @@ export default function BookingModal({ doctor, onClose, onSubmit, darkMode, isRe
             </div>
           )}
 
-          <div className="flex justify-end space-x-4 mt-6">
+          <div className="flex justify-end space-x-4">
             <button
               type="button"
               onClick={onClose}

@@ -53,7 +53,8 @@ export default function PatientDashboard() {
   const fetchDoctors = async () => {
     try {
       const response = await axios.get('/api/doctors');
-      setDoctors(response.data);
+      // The response.data is an object with a doctors property
+      setDoctors(response.data.doctors || []);
       setError(null);
     } catch (err) {
       console.error('Error fetching doctors:', err);

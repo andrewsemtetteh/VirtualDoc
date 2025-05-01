@@ -5,8 +5,24 @@ export async function GET() {
   try {
     const { db } = await connectToDatabase();
     
-    const doctors = await db.collection('users')
+    // First, let's check all doctors to see their statuses
+    const allDoctors = await db.collection('users')
       .find({ role: 'doctor' })
+      .project({
+        _id: 1,
+        fullName: 1,
+        status: 1
+      })
+      .toArray();
+
+    console.log('All doctors and their statuses:', allDoctors);
+    
+    // Now fetch only active doctors
+    const activeDoctors = await db.collection('users')
+      .find({ 
+        role: 'doctor',
+        status: 'active'
+      })
       .project({
         _id: 1,
         fullName: 1,
@@ -19,7 +35,9 @@ export async function GET() {
       })
       .toArray();
 
-    return NextResponse.json(doctors);
+    console.log('Active doctors found:', activeDoctors);
+
+    return NextResponse.json({ doctors: activeDoctors });
   } catch (error) {
     console.error('Error fetching doctors:', error);
     return NextResponse.json(

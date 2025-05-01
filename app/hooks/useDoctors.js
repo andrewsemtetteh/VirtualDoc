@@ -9,7 +9,7 @@ export function useDoctors() {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await axios.get('/api/admin/doctors/approved');
+        const response = await axios.get('/api/doctors');
         setDoctors(response.data.doctors);
         setError(null);
       } catch (err) {

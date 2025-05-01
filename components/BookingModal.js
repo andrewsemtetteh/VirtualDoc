@@ -11,6 +11,7 @@ export default function BookingModal({ isOpen, onClose, doctor, onSubmit }) {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     if (doctor && selectedDate) {
@@ -23,13 +24,33 @@ export default function BookingModal({ isOpen, onClose, doctor, onSubmit }) {
     }
   }, [doctor, selectedDate]);
 
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!selectedDate) {
+      errors.date = 'Please select a date';
+    } else if (new Date(selectedDate) < new Date()) {
+      errors.date = 'Cannot select a past date';
+    }
+    
+    if (!selectedTime) {
+      errors.time = 'Please select a time';
+    }
+    
+    if (!reason.trim()) {
+      errors.reason = 'Please provide a reason for the appointment';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    if (!selectedDate || !selectedTime || !reason) {
-      setError('Please fill in all required fields');
+    if (!validateForm()) {
       setLoading(false);
       return;
     }
@@ -102,7 +123,7 @@ export default function BookingModal({ isOpen, onClose, doctor, onSubmit }) {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Date
+                      Date *
                     </label>
                     <input
                       type="date"
@@ -114,25 +135,40 @@ export default function BookingModal({ isOpen, onClose, doctor, onSubmit }) {
                         const month = (date.getMonth() + 1).toString().padStart(2, '0');
                         const year = date.getFullYear();
                         setSelectedDate(`${day}/${month}/${year}`);
+                        if (formErrors.date) {
+                          setFormErrors(prev => ({ ...prev, date: '' }));
+                        }
                       }}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className={`mt-1 block w-full rounded-md ${
+                        formErrors.date ? 'border-red-500' : 'border-gray-300'
+                      } shadow-sm focus:border-blue-500 focus:ring-blue-500`}
                       required
-                      min={new Date().toISOString().split('T')[0]} // Set min date to today
+                      min={new Date().toISOString().split('T')[0]}
                     />
+                    {formErrors.date && (
+                      <p className="mt-1 text-sm text-red-500">{formErrors.date}</p>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Time
+                      Time *
                     </label>
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Clock className="h-5 w-5 text-gray-400" />
                       </div>
                       <select
-                        className="focus:ring-green-500 focus:border-green-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                        className={`focus:ring-green-500 focus:border-green-500 block w-full pl-10 sm:text-sm ${
+                          formErrors.time ? 'border-red-500' : 'border-gray-300'
+                        } rounded-md`}
                         value={selectedTime}
-                        onChange={(e) => setSelectedTime(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedTime(e.target.value);
+                          if (formErrors.time) {
+                            setFormErrors(prev => ({ ...prev, time: '' }));
+                          }
+                        }}
                         required
                       >
                         <option value="">Select a time slot</option>
@@ -143,6 +179,9 @@ export default function BookingModal({ isOpen, onClose, doctor, onSubmit }) {
                         ))}
                       </select>
                     </div>
+                    {formErrors.time && (
+                      <p className="mt-1 text-sm text-red-500">{formErrors.time}</p>
+                    )}
                   </div>
 
                   <div>
@@ -151,11 +190,22 @@ export default function BookingModal({ isOpen, onClose, doctor, onSubmit }) {
                     </label>
                     <textarea
                       value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      onChange={(e) => {
+                        setReason(e.target.value);
+                        if (formErrors.reason) {
+                          setFormErrors(prev => ({ ...prev, reason: '' }));
+                        }
+                      }}
+                      className={`mt-1 block w-full rounded-md ${
+                        formErrors.reason ? 'border-red-500' : 'border-gray-300'
+                      } shadow-sm focus:border-blue-500 focus:ring-blue-500`}
                       rows={3}
                       required
+                      placeholder="Please describe the reason for your visit..."
                     />
+                    {formErrors.reason && (
+                      <p className="mt-1 text-sm text-red-500">{formErrors.reason}</p>
+                    )}
                   </div>
 
                   <div>
@@ -167,6 +217,7 @@ export default function BookingModal({ isOpen, onClose, doctor, onSubmit }) {
                       onChange={(e) => setNotes(e.target.value)}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       rows={2}
+                      placeholder="Enter any additional notes..."
                     />
                   </div>
 

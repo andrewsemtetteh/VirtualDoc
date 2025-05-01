@@ -22,42 +22,75 @@ const appointmentSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['pending', 'accepted', 'rejected', 'completed', 'cancelled', 'rescheduled'],
-    default: 'pending'
+    default: 'pending',
+    required: true
   },
   reason: {
     type: String,
     required: true
   },
-  notes: String,
-  rescheduleReason: String,
+  notes: {
+    type: String,
+    required: false
+  },
+  rescheduleReason: {
+    type: String,
+    required: false
+  },
   rescheduleHistory: [{
-    oldDate: String,
-    oldTime: String,
-    newDate: String,
-    newTime: String,
-    reason: String,
+    oldDate: {
+      type: String,
+      required: true
+    },
+    oldTime: {
+      type: String,
+      required: true
+    },
+    newDate: {
+      type: String,
+      required: true
+    },
+    newTime: {
+      type: String,
+      required: true
+    },
+    reason: {
+      type: String,
+      required: true
+    },
     changedBy: {
       type: String,
-      enum: ['patient', 'doctor']
+      enum: ['patient', 'doctor'],
+      required: true
     },
     changedAt: {
       type: Date,
-      default: Date.now
+      default: Date.now,
+      required: true
     }
   }],
-  videoLink: String,
-  diagnosis: String,
+  videoLink: {
+    type: String,
+    required: false
+  },
+  diagnosis: {
+    type: String,
+    required: false
+  },
   prescription: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Prescription'
+    ref: 'Prescription',
+    required: false
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
+    required: true
   },
   updatedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
+    required: true
   }
 });
 
