@@ -1,11 +1,16 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Bell, Settings, LogOut, User, Menu, X, Search, Sun, Moon, Edit, Trash2, Clock, Download } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Bell, Settings, LogOut, User, Menu, X, Search, Sun, Moon, Edit, Trash2, Clock, Download, CheckCircle } from 'lucide-react';
 import { Menu as HMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import MeetingLinkModal from '@/app/components/MeetingLinkModal';
+import PrescriptionModal from '@/app/components/PrescriptionModal';
+import PrescriptionsSection from '@/app/components/PrescriptionsSection';
+import PracticeOverview from '@/app/components/PracticeOverview';
 
 function PendingApprovalPage({ darkMode }) {
   return (
@@ -119,6 +124,13 @@ export default function DoctorDashboard() {
   });
 
   const [patients, setPatients] = useState([]);
+  const [showMeetingLinkModal, setShowMeetingLinkModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [completedAppointments, setCompletedAppointments] = useState([]);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [selectedAppointmentForPrescription, setSelectedAppointmentForPrescription] = useState(null);
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [patientsWithCompletedAppointments, setPatientsWithCompletedAppointments] = useState([]);
 
   useEffect(() => {
     setMounted(true);
@@ -183,6 +195,30 @@ export default function DoctorDashboard() {
         .then(res => res.json())
         .then(data => setPastAppointments(data));
 
+      // Fetch completed appointments
+      fetch('/api/appointments/completed')
+        .then(res => res.json())
+        .then(data => {
+          setCompletedAppointments(data);
+          // Extract unique patients from completed appointments
+          const uniquePatients = data.reduce((acc, appointment) => {
+            if (!acc.find(p => p._id === appointment.patientId)) {
+              acc.push({
+                _id: appointment.patientId,
+                fullName: appointment.patientName,
+                lastVisit: appointment.completedAt
+              });
+            }
+            return acc;
+          }, []);
+          setPatientsWithCompletedAppointments(uniquePatients);
+        });
+
+      // Fetch prescriptions
+      fetch('/api/prescriptions/doctor')
+        .then(res => res.json())
+        .then(data => setPrescriptions(data));
+
       // Fetch doctor profile
       fetch(`/api/doctor/profile?email=${encodeURIComponent(session.user.email)}`)
         .then(res => res.json())
@@ -225,11 +261,162 @@ export default function DoctorDashboard() {
 
   const unreadNotifications = notifications.filter(n => !n.read).length;
 
+  const handleConfirmAppointment = async (appointmentId) => {
+    try {
+      const response = await fetch(`/api/appointments/${appointmentId}/confirm`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to confirm appointment');
+      }
+
+      // Show meeting link modal
+      const appointment = upcomingAppointments.find(a => a._id === appointmentId);
+      setSelectedAppointment(appointment);
+      setShowMeetingLinkModal(true);
+
+      // Refresh appointments
+      const appointmentsResponse = await fetch('/api/appointments/upcoming');
+      const appointmentsData = await appointmentsResponse.json();
+      setUpcomingAppointments(appointmentsData);
+
+      toast.success('Appointment confirmed successfully');
+    } catch (error) {
+      console.error('Error confirming appointment:', error);
+      toast.error('Failed to confirm appointment');
+    }
+  };
+
+  const handleSaveMeetingLink = async (appointmentId, meetingLink) => {
+    try {
+      const response = await fetch(`/api/appointments/${appointmentId}/meeting-link`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ meetingLink }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save meeting link');
+      }
+
+      // Refresh appointments
+      const appointmentsResponse = await fetch('/api/appointments/upcoming');
+      const appointmentsData = await appointmentsResponse.json();
+      setUpcomingAppointments(appointmentsData);
+
+      toast.success('Meeting link saved successfully');
+    } catch (error) {
+      console.error('Error saving meeting link:', error);
+      toast.error('Failed to save meeting link');
+    }
+  };
+
+  const handleRejectAppointment = async (appointmentId) => {
+    try {
+      const response = await fetch(`/api/appointments/${appointmentId}/reject`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reject appointment');
+      }
+
+      // Refresh appointments
+      const appointmentsResponse = await fetch('/api/appointments/upcoming');
+      const appointmentsData = await appointmentsResponse.json();
+      setUpcomingAppointments(appointmentsData);
+
+      // Show success notification
+      toast.success('Appointment rejected successfully');
+    } catch (error) {
+      console.error('Error rejecting appointment:', error);
+      toast.error('Failed to reject appointment');
+    }
+  };
+
+  const handleMarkAsDone = async (appointmentId) => {
+    try {
+      const response = await fetch(`/api/appointments/${appointmentId}/complete`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to mark appointment as done');
+      }
+
+      // Refresh both upcoming and completed appointments
+      const [upcomingResponse, completedResponse] = await Promise.all([
+        fetch('/api/appointments/upcoming'),
+        fetch('/api/appointments/completed')
+      ]);
+
+      const upcomingData = await upcomingResponse.json();
+      const completedData = await completedResponse.json();
+
+      setUpcomingAppointments(upcomingData);
+      setCompletedAppointments(completedData);
+
+      toast.success('Appointment marked as completed');
+    } catch (error) {
+      console.error('Error marking appointment as done:', error);
+      toast.error('Failed to mark appointment as done');
+    }
+  };
+
+  const handlePrescribe = (appointment) => {
+    setSelectedAppointmentForPrescription(appointment);
+    setShowPrescriptionModal(true);
+  };
+
+  const handleCreatePrescription = async (appointmentId, prescriptionData) => {
+    try {
+      const response = await fetch('/api/prescriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          appointmentId,
+          ...prescriptionData
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create prescription');
+      }
+
+      toast.success('Prescription created successfully');
+      
+      // Refresh completed appointments to show the new prescription
+      const completedResponse = await fetch('/api/appointments/completed');
+      const completedData = await completedResponse.json();
+      setCompletedAppointments(completedData);
+    } catch (error) {
+      console.error('Error creating prescription:', error);
+      toast.error('Failed to create prescription');
+    }
+  };
+
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
         return (
           <div className="space-y-6">
+            {/* Practice Overview Section */}
+            <PracticeOverview darkMode={darkMode} />
+
             {/* Today's Appointments */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
               <h3 className="text-lg font-medium mb-4">Today's Appointments</h3>
@@ -371,6 +558,66 @@ export default function DoctorDashboard() {
                 ))}
               </div>
             </div>
+            
+            {/* Recent Medical Records */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className="text-lg font-medium mb-4">Recent Medical Records</h3>
+              <div className="space-y-4">
+                {completedAppointments.map((appointment) => (
+                  <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">
+                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                          </span>
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">{appointment.patientName}</p>
+                          <p className="text-sm text-gray-500">{new Date(appointment.completedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <button 
+                          className={`p-2 ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-500 hover:text-blue-600'}`}
+                          onClick={() => handleDownloadRecord(appointment._id)}
+                        >
+                          <Download size={20} />
+                        </button>
+                        <button 
+                          className={`p-2 ${darkMode ? 'text-yellow-400 hover:text-yellow-300' : 'text-yellow-500 hover:text-yellow-600'}`}
+                          onClick={() => handleEditRecord(appointment._id)}
+                        >
+                          <Edit size={20} />
+                        </button>
+                        <button 
+                          className={`p-2 ${darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-600'}`}
+                          onClick={() => handleDeleteRecord(appointment._id)}
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    </div>
+                    {appointment.prescription && (
+                      <div className="mt-4 text-sm space-y-2">
+                        <p><span className="font-medium">Diagnosis:</span> {appointment.prescription.diagnosis}</p>
+                        <p><span className="font-medium">Treatment:</span> {appointment.prescription.treatmentPlan}</p>
+                        <p><span className="font-medium">Medication:</span> {appointment.prescription.medication}</p>
+                        <p><span className="font-medium">Dosage:</span> {appointment.prescription.dosage}</p>
+                        <p><span className="font-medium">Frequency:</span> {appointment.prescription.frequency}</p>
+                        <p><span className="font-medium">Duration:</span> {appointment.prescription.duration}</p>
+                        {appointment.prescription.additionalInstructions && (
+                          <p><span className="font-medium">Additional Instructions:</span> {appointment.prescription.additionalInstructions}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Prescriptions Section */}
+            <PrescriptionsSection darkMode={darkMode} />
           </div>
         );
       case 'appointments':
@@ -417,21 +664,13 @@ export default function DoctorDashboard() {
             {/* Upcoming Appointments */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
               <h3 className="text-lg font-medium mb-4">Upcoming Appointments</h3>
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {upcomingAppointments
-                  .filter(appointment => {
-                    const matchesDate = !appointmentFilters.date || 
-                      new Date(appointment.scheduledFor).toDateString() === new Date(appointmentFilters.date).toDateString();
-                    const matchesPatient = !appointmentFilters.patient || 
-                      appointment.patientName.toLowerCase().includes(appointmentFilters.patient.toLowerCase());
-                    const matchesStatus = appointmentFilters.status === 'all' || 
-                      appointment.status === appointmentFilters.status;
-                    return matchesDate && matchesPatient && matchesStatus;
-                  })
+                  .filter(appointment => appointment.status === 'accepted')
                   .map((appointment) => (
-                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
+                      <div className="flex items-center mb-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
                           <span className="text-gray-500">
                             {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
                           </span>
@@ -441,27 +680,64 @@ export default function DoctorDashboard() {
                           <p className="text-sm text-gray-500">{appointment.type}</p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <p className="text-lg font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
-                          <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      <div className="flex-1">
+                        <div className="mb-2">
+                          <span className="text-sm font-medium">Consultation Reason: </span>
+                          <span className="text-sm text-gray-500">{appointment.reason}</span>
                         </div>
-                        <button 
-                          className={`px-4 py-2 rounded ${
-                            new Date(appointment.scheduledFor).getTime() - Date.now() <= 600000
-                              ? 'bg-green-500 text-white hover:bg-green-600'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          }`}
-                          disabled={new Date(appointment.scheduledFor).getTime() - Date.now() > 600000}
-                          onClick={() => handleJoinVideoCall(appointment._id)}
+                        {appointment.notes && (
+                          <div className="mb-2">
+                            <span className="text-sm font-medium">Additional Notes: </span>
+                            <span className="text-sm text-gray-500">{appointment.notes}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center text-sm text-gray-500 mb-2">
+                          <Clock size={16} className="mr-2" />
+                          <span>Time: {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: true 
+                          }) : 'Not set'}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Calendar size={16} className="mr-2" />
+                          <span>Date: {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleDateString('en-US', { 
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          }) : 'Not set'}</span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2 mt-4">
+                        {appointment.meetingLink ? (
+                          <a
+                            href={appointment.meetingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Join Meeting
+                          </a>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedAppointment(appointment);
+                              setShowMeetingLinkModal(true);
+                            }}
+                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Add Meeting Link
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleMarkAsDone(appointment._id)}
+                          className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center justify-center"
                         >
-                          Join Call
-                        </button>
-                        <button 
-                          className="p-2 text-blue-500 hover:text-blue-600"
-                          onClick={() => handleViewPatientDetails(appointment.patientId)}
-                        >
-                          <User size={20} />
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Done
                         </button>
                       </div>
                     </div>
@@ -469,46 +745,44 @@ export default function DoctorDashboard() {
               </div>
             </div>
 
-            {/* Past Appointments */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Past Appointments</h3>
-              <div className="space-y-4">
-                {pastAppointments
-                  .filter(appointment => {
-                    const matchesDate = !appointmentFilters.date || 
-                      new Date(appointment.scheduledFor).toDateString() === new Date(appointmentFilters.date).toDateString();
-                    const matchesPatient = !appointmentFilters.patient || 
-                      appointment.patientName.toLowerCase().includes(appointmentFilters.patient.toLowerCase());
-                    const matchesStatus = appointmentFilters.status === 'all' || 
-                      appointment.status === appointmentFilters.status;
-                    return matchesDate && matchesPatient && matchesStatus;
-                  })
-                  .map((appointment) => (
-                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500">
-                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <p className="font-medium">{appointment.patientName}</p>
-                          <p className="text-sm text-gray-500">{appointment.type}</p>
-                        </div>
+            {/* Completed Appointments */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mt-6`}>
+              <h3 className="text-lg font-medium mb-4">Completed Appointments</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {completedAppointments.map((appointment) => (
+                  <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
+                    <div className="flex items-center mb-4">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500">
+                          {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
-                        <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                        <p className={`text-sm ${
-                          appointment.status === 'completed' ? 'text-green-500' :
-                          appointment.status === 'cancelled' ? 'text-red-500' :
-                          'text-yellow-500'
-                        }`}>
-                          {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                        </p>
+                      <div className="ml-4">
+                        <p className="font-medium">{appointment.patientName}</p>
+                        <p className="text-sm text-gray-500">{appointment.type}</p>
                       </div>
                     </div>
-                  ))}
+                    <div className="flex-1">
+                      <div className="mb-2">
+                        <span className="text-sm font-medium">Consultation Reason: </span>
+                        <span className="text-sm text-gray-500">{appointment.reason}</span>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500 mb-2">
+                        <Clock size={16} className="mr-2" />
+                        <span>Completed: {new Date(appointment.completedAt).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2 mt-4">
+                      <button
+                        onClick={() => handlePrescribe(appointment)}
+                        className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Prescribe
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -558,7 +832,6 @@ export default function DoctorDashboard() {
                   >
                     <option value="name">Name</option>
                     <option value="lastVisit">Last Visit</option>
-                    <option value="age">Age</option>
                   </select>
                 </div>
               </div>
@@ -568,7 +841,7 @@ export default function DoctorDashboard() {
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
               <h3 className="text-lg font-medium mb-4">Patients</h3>
               <div className="space-y-4">
-                {patients
+                {patientsWithCompletedAppointments
                   .filter(patient => {
                     const matchesSearch = !patientFilters.search || 
                       patient.fullName.toLowerCase().includes(patientFilters.search.toLowerCase());
@@ -589,7 +862,6 @@ export default function DoctorDashboard() {
                     switch (patientFilters.sortBy) {
                       case 'name': return a.fullName.localeCompare(b.fullName);
                       case 'lastVisit': return new Date(b.lastVisit) - new Date(a.lastVisit);
-                      case 'age': return b.age - a.age;
                       default: return 0;
                     }
                   })
@@ -597,32 +869,29 @@ export default function DoctorDashboard() {
                     <div key={patient._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
                       <div className="flex items-center">
                         <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          {patient.profilePicture ? (
-                            <Image 
-                              src={patient.profilePicture} 
-                              alt={patient.fullName} 
-                              width={40} 
-                              height={40} 
-                              className="w-full h-full object-cover rounded-full"
-                            />
-                          ) : (
-                            <span className="text-gray-500">
-                              {patient.fullName?.split(' ').map(n => n[0]).join('') || 'P'}
-                            </span>
-                          )}
+                          <span className="text-gray-500">
+                            {patient.fullName?.split(' ').map(n => n[0]).join('') || 'P'}
+                          </span>
                         </div>
                         <div className="ml-4">
                           <p className="font-medium">{patient.fullName}</p>
-                          <p className="text-sm text-gray-500">Age: {patient.age}</p>
                           <p className="text-xs text-gray-400">Last visit: {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'N/A'}</p>
                         </div>
                       </div>
-                      <button 
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                        onClick={() => handleViewPatientDetails(patient._id)}
-                      >
-                        View Records
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                          onClick={() => handleViewPatientDetails(patient._id)}
+                        >
+                          View Records
+                        </button>
+                        <button 
+                          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                          onClick={() => handleScheduleAppointment(patient._id)}
+                        >
+                          Schedule
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>
@@ -645,7 +914,7 @@ export default function DoctorDashboard() {
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                     }`}>
                       <option>Select Patient</option>
-                      {patients.map(patient => (
+                      {patientsWithCompletedAppointments.map(patient => (
                         <option key={patient._id} value={patient._id}>{patient.fullName}</option>
                       ))}
                     </select>
@@ -740,41 +1009,55 @@ export default function DoctorDashboard() {
               </form>
             </div>
 
-            {/* Medical Records */}
+            {/* Prescriptions List */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-6">Recent Medical Records</h3>
+              <h3 className="text-lg font-medium mb-6">Recent Prescriptions</h3>
               <div className="space-y-6">
-                {[1, 2, 3].map((record) => (
-                  <div key={record} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500">JD</span>
+                {prescriptions.length > 0 ? (
+                  prescriptions.map((prescription) => (
+                    <div key={prescription._id} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-gray-500">
+                              {prescription.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                            </span>
+                          </div>
+                          <div className="ml-4">
+                            <p className="font-medium">{prescription.patientName}</p>
+                            <p className="text-xs text-gray-500">Issued: {new Date(prescription.createdAt).toLocaleDateString()}</p>
+                          </div>
                         </div>
-                        <div className="ml-4">
-                          <p className="font-medium">John Doe</p>
-                          <p className="text-xs text-gray-500">Consultation: 2024-03-15</p>
+                        <div className="flex items-center space-x-3">
+                          <button className="p-2 text-blue-500 hover:text-blue-600">
+                            <Download size={20} />
+                          </button>
+                          <button className="p-2 text-yellow-500 hover:text-yellow-600">
+                            <Edit size={20} />
+                          </button>
+                          <button className="p-2 text-red-500 hover:text-red-600">
+                            <Trash2 size={20} />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <button className="p-2 text-blue-500 hover:text-blue-600">
-                          <Download size={20} />
-                        </button>
-                        <button className="p-2 text-yellow-500 hover:text-yellow-600">
-                          <Edit size={20} />
-                        </button>
-                        <button className="p-2 text-red-500 hover:text-red-600">
-                          <Trash2 size={20} />
-                        </button>
+                      <div className="mt-4 text-sm space-y-2">
+                        <p><span className="font-medium">Diagnosis:</span> {prescription.diagnosis}</p>
+                        <p><span className="font-medium">Treatment Plan:</span> {prescription.treatmentPlan}</p>
+                        <p><span className="font-medium">Medication:</span> {prescription.medication}</p>
+                        <p><span className="font-medium">Dosage:</span> {prescription.dosage}</p>
+                        <p><span className="font-medium">Frequency:</span> {prescription.frequency}</p>
+                        <p><span className="font-medium">Duration:</span> {prescription.duration}</p>
+                        {prescription.additionalInstructions && (
+                          <p><span className="font-medium">Additional Instructions:</span> {prescription.additionalInstructions}</p>
+                        )}
                       </div>
                     </div>
-                    <div className="mt-4 text-sm space-y-2">
-                      <p><span className="font-medium">Diagnosis:</span> Common Cold</p>
-                      <p><span className="font-medium">Treatment:</span> Prescribed Amoxicillin</p>
-                      <p><span className="font-medium">Follow-up:</span> 7 days</p>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No prescriptions found</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -823,21 +1106,13 @@ export default function DoctorDashboard() {
             {/* Upcoming Appointments */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
               <h3 className="text-lg font-medium mb-4">Upcoming Appointments</h3>
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {upcomingAppointments
-                  .filter(appointment => {
-                    const matchesDate = !appointmentFilters.date || 
-                      new Date(appointment.scheduledFor).toDateString() === new Date(appointmentFilters.date).toDateString();
-                    const matchesPatient = !appointmentFilters.patient || 
-                      appointment.patientName.toLowerCase().includes(appointmentFilters.patient.toLowerCase());
-                    const matchesStatus = appointmentFilters.status === 'all' || 
-                      appointment.status === appointmentFilters.status;
-                    return matchesDate && matchesPatient && matchesStatus;
-                  })
+                  .filter(appointment => appointment.status === 'accepted')
                   .map((appointment) => (
-                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
+                      <div className="flex items-center mb-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
                           <span className="text-gray-500">
                             {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
                           </span>
@@ -847,27 +1122,64 @@ export default function DoctorDashboard() {
                           <p className="text-sm text-gray-500">{appointment.type}</p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <p className="text-lg font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
-                          <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      <div className="flex-1">
+                        <div className="mb-2">
+                          <span className="text-sm font-medium">Consultation Reason: </span>
+                          <span className="text-sm text-gray-500">{appointment.reason}</span>
                         </div>
-                        <button 
-                          className={`px-4 py-2 rounded ${
-                            new Date(appointment.scheduledFor).getTime() - Date.now() <= 600000
-                              ? 'bg-green-500 text-white hover:bg-green-600'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          }`}
-                          disabled={new Date(appointment.scheduledFor).getTime() - Date.now() > 600000}
-                          onClick={() => handleJoinVideoCall(appointment._id)}
+                        {appointment.notes && (
+                          <div className="mb-2">
+                            <span className="text-sm font-medium">Additional Notes: </span>
+                            <span className="text-sm text-gray-500">{appointment.notes}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center text-sm text-gray-500 mb-2">
+                          <Clock size={16} className="mr-2" />
+                          <span>Time: {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: true 
+                          }) : 'Not set'}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Calendar size={16} className="mr-2" />
+                          <span>Date: {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleDateString('en-US', { 
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          }) : 'Not set'}</span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2 mt-4">
+                        {appointment.meetingLink ? (
+                          <a
+                            href={appointment.meetingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Join Meeting
+                          </a>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedAppointment(appointment);
+                              setShowMeetingLinkModal(true);
+                            }}
+                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Add Meeting Link
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleMarkAsDone(appointment._id)}
+                          className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center justify-center"
                         >
-                          Join Call
-                        </button>
-                        <button 
-                          className="p-2 text-blue-500 hover:text-blue-600"
-                          onClick={() => handleViewPatientDetails(appointment.patientId)}
-                        >
-                          <User size={20} />
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Done
                         </button>
                       </div>
                     </div>
@@ -875,46 +1187,44 @@ export default function DoctorDashboard() {
               </div>
             </div>
 
-            {/* Past Appointments */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Past Appointments</h3>
-              <div className="space-y-4">
-                {pastAppointments
-                  .filter(appointment => {
-                    const matchesDate = !appointmentFilters.date || 
-                      new Date(appointment.scheduledFor).toDateString() === new Date(appointmentFilters.date).toDateString();
-                    const matchesPatient = !appointmentFilters.patient || 
-                      appointment.patientName.toLowerCase().includes(appointmentFilters.patient.toLowerCase());
-                    const matchesStatus = appointmentFilters.status === 'all' || 
-                      appointment.status === appointmentFilters.status;
-                    return matchesDate && matchesPatient && matchesStatus;
-                  })
-                  .map((appointment) => (
-                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500">
-                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <p className="font-medium">{appointment.patientName}</p>
-                          <p className="text-sm text-gray-500">{appointment.type}</p>
-                        </div>
+            {/* Completed Appointments */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mt-6`}>
+              <h3 className="text-lg font-medium mb-4">Completed Appointments</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {completedAppointments.map((appointment) => (
+                  <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
+                    <div className="flex items-center mb-4">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500">
+                          {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
-                        <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                        <p className={`text-sm ${
-                          appointment.status === 'completed' ? 'text-green-500' :
-                          appointment.status === 'cancelled' ? 'text-red-500' :
-                          'text-yellow-500'
-                        }`}>
-                          {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                        </p>
+                      <div className="ml-4">
+                        <p className="font-medium">{appointment.patientName}</p>
+                        <p className="text-sm text-gray-500">{appointment.type}</p>
                       </div>
                     </div>
-                  ))}
+                    <div className="flex-1">
+                      <div className="mb-2">
+                        <span className="text-sm font-medium">Consultation Reason: </span>
+                        <span className="text-sm text-gray-500">{appointment.reason}</span>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500 mb-2">
+                        <Clock size={16} className="mr-2" />
+                        <span>Completed: {new Date(appointment.completedAt).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2 mt-4">
+                      <button
+                        onClick={() => handlePrescribe(appointment)}
+                        className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Prescribe
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -953,7 +1263,7 @@ export default function DoctorDashboard() {
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-green-50 to-gray-100 text-gray-900'} transition-all duration-300`}>
       {/* Header */}
-      <header className={`fixed top-0 left-0 right-0 z-50 ${
+      <header className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between ${
         darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
       } shadow-sm transition-all duration-300 h-16 border-b`}>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -1165,6 +1475,16 @@ export default function DoctorDashboard() {
                         </div>
                       </div>
                       <div className="flex-1">
+                        <div className="mb-2">
+                          <p className="text-sm font-medium">Consultation Reason:</p>
+                          <p className="text-sm text-gray-500">{appointment.reason}</p>
+                        </div>
+                        {appointment.notes && (
+                          <div className="mb-2">
+                            <p className="text-sm font-medium">Notes:</p>
+                            <p className="text-sm text-gray-500">{appointment.notes}</p>
+                          </div>
+                        )}
                         <div className="flex items-center text-sm text-gray-500 mb-2">
                           <Clock size={16} className="mr-2" />
                           <span>{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -1198,11 +1518,7 @@ export default function DoctorDashboard() {
               <h3 className="text-lg font-medium mb-4">Upcoming Appointments</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {upcomingAppointments
-                  .filter(appointment => {
-                    const appointmentDate = new Date(appointment.scheduledFor);
-                    const today = new Date();
-                    return appointmentDate > today && appointment.status === 'confirmed';
-                  })
+                  .filter(appointment => appointment.status === 'accepted')
                   .map((appointment) => (
                     <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
                       <div className="flex items-center mb-4">
@@ -1217,176 +1533,105 @@ export default function DoctorDashboard() {
                         </div>
                       </div>
                       <div className="flex-1">
+                        <div className="mb-2">
+                          <span className="text-sm font-medium">Consultation Reason: </span>
+                          <span className="text-sm text-gray-500">{appointment.reason}</span>
+                        </div>
+                        {appointment.notes && (
+                          <div className="mb-2">
+                            <span className="text-sm font-medium">Additional Notes: </span>
+                            <span className="text-sm text-gray-500">{appointment.notes}</span>
+                          </div>
+                        )}
                         <div className="flex items-center text-sm text-gray-500 mb-2">
                           <Clock size={16} className="mr-2" />
-                          <span>{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span>Time: {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: true 
+                          }) : 'Not set'}</span>
                         </div>
                         <div className="flex items-center text-sm text-gray-500">
                           <Calendar size={16} className="mr-2" />
-                          <span>{new Date(appointment.scheduledFor).toLocaleDateString()}</span>
+                          <span>Date: {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleDateString('en-US', { 
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          }) : 'Not set'}</span>
                         </div>
                       </div>
-                      <button 
-                        className={`mt-4 w-full px-4 py-2 rounded ${
-                          new Date(appointment.scheduledFor).getTime() - Date.now() <= 600000
-                            ? 'bg-green-500 text-white hover:bg-green-600'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                        disabled={new Date(appointment.scheduledFor).getTime() - Date.now() > 600000}
-                        onClick={() => handleJoinVideoCall(appointment._id)}
-                      >
-                        Join Call
-                      </button>
+                      <div className="flex space-x-2 mt-4">
+                        {appointment.meetingLink ? (
+                          <a
+                            href={appointment.meetingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Join Meeting
+                          </a>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedAppointment(appointment);
+                              setShowMeetingLinkModal(true);
+                            }}
+                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Add Meeting Link
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleMarkAsDone(appointment._id)}
+                          className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center justify-center"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Done
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>
             </div>
-          </section>
 
-          {/* Prescriptions Section */}
-          <section id="prescriptions" className="scroll-mt-20">
-            <h2 className="text-2xl font-bold mb-4 sm:mb-6">Prescriptions & Medical Records</h2>
-            
-            {/* New Prescription Form */}
-            <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mb-4 sm:mb-6`}>
-              <h3 className={`text-lg font-medium mb-4 sm:mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>New Prescription</h3>
-              <form className="space-y-4 sm:space-y-6">
-                <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Patient</label>
-                    <select className={`w-full h-10 sm:h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
-                      darkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                    }`}>
-                      <option>Select Patient</option>
-                      {patients.map(patient => (
-                        <option key={patient._id} value={patient._id}>{patient.fullName}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Diagnosis</label>
-                    <textarea 
-                      className={`w-full h-24 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
-                        darkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                      }`}
-                      placeholder="Enter diagnosis details"
-                    ></textarea>
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Treatment Plan</label>
-                    <textarea 
-                      className={`w-full h-24 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
-                        darkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                      }`}
-                      placeholder="Enter treatment plan"
-                    ></textarea>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Medication</label>
-                      <input 
-                        type="text" 
-                        className={`w-full h-10 sm:h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
-                          darkMode 
-                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                        }`}
-                        placeholder="Enter medication name" 
-                      />
-                    </div>
-                    <div>
-                      <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Dosage</label>
-                      <input 
-                        type="text" 
-                        className={`w-full h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
-                          darkMode 
-                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                        }`}
-                        placeholder="e.g., 500mg" 
-                      />
-                    </div>
-                    <div>
-                      <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Frequency</label>
-                      <input 
-                        type="text" 
-                        className={`w-full h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
-                          darkMode 
-                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                        }`}
-                        placeholder="e.g., Twice daily" 
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Duration</label>
-                    <input 
-                      type="text" 
-                      className={`w-full h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
-                        darkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                      }`}
-                      placeholder="e.g., 7 days" 
-                    />
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Additional Instructions</label>
-                    <textarea 
-                      className={`w-full h-24 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
-                        darkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                      }`}
-                      placeholder="Enter any additional instructions"
-                    ></textarea>
-                  </div>
-                </div>
-                <button type="submit" className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 text-lg font-medium">
-                  Issue Prescription
-                </button>
-              </form>
-            </div>
-
-            {/* Medical Records */}
-            <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-6">Recent Medical Records</h3>
-              <div className="space-y-6">
-                {[1, 2, 3].map((record) => (
-                  <div key={record} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500">JD</span>
-                        </div>
-                        <div className="ml-4">
-                          <p className="font-medium">John Doe</p>
-                          <p className="text-xs text-gray-500">Consultation: 2024-03-15</p>
-                        </div>
+            {/* Completed Appointments */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mt-6`}>
+              <h3 className="text-lg font-medium mb-4">Completed Appointments</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {completedAppointments.map((appointment) => (
+                  <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
+                    <div className="flex items-center mb-4">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500">
+                          {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                        </span>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <button className="p-2 text-blue-500 hover:text-blue-600">
-                          <Download size={16} className="sm:w-5 sm:h-5" />
-                        </button>
-                        <button className="p-2 text-yellow-500 hover:text-yellow-600">
-                          <Edit size={16} className="sm:w-5 sm:h-5" />
-                        </button>
-                        <button className="p-2 text-red-500 hover:text-red-600">
-                          <Trash2 size={16} className="sm:w-5 sm:h-5" />
-                        </button>
+                      <div className="ml-4">
+                        <p className="font-medium">{appointment.patientName}</p>
+                        <p className="text-sm text-gray-500">{appointment.type}</p>
                       </div>
                     </div>
-                    <div className="mt-4 text-sm space-y-2">
-                      <p><span className="font-medium">Diagnosis:</span> Common Cold</p>
-                      <p><span className="font-medium">Treatment:</span> Prescribed Amoxicillin</p>
-                      <p><span className="font-medium">Follow-up:</span> 7 days</p>
+                    <div className="flex-1">
+                      <div className="mb-2">
+                        <span className="text-sm font-medium">Consultation Reason: </span>
+                        <span className="text-sm text-gray-500">{appointment.reason}</span>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500 mb-2">
+                        <Clock size={16} className="mr-2" />
+                        <span>Completed: {new Date(appointment.completedAt).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2 mt-4">
+                      <button
+                        onClick={() => handlePrescribe(appointment)}
+                        className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Prescribe
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -1394,12 +1639,15 @@ export default function DoctorDashboard() {
             </div>
           </section>
 
+          {/* Prescriptions Section */}
+          <PrescriptionsSection darkMode={darkMode} />
+
           {/* Patients Section */}
           <section id="patients" className="scroll-mt-20">
             <h2 className="text-2xl font-bold mb-6">Patients</h2>
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
               <div className="space-y-4">
-                {patients.map((patient) => (
+                {patientsWithCompletedAppointments.map((patient, index) => (
                   <div key={patient._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -1419,9 +1667,8 @@ export default function DoctorDashboard() {
                           )}
                         </div>
                         <div className="ml-4">
-                          <p className="font-medium">{patient.fullName}</p>
-                          <p className="text-sm text-gray-500">Age: {patient.age}</p>
-                          <p className="text-xs text-gray-400">Last visit: {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'N/A'}</p>
+                          <p className="font-medium">{index + 1}. {patient.fullName}</p>
+                          <p className="text-sm text-gray-500">Last visit: {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'N/A'}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -1446,6 +1693,27 @@ export default function DoctorDashboard() {
           </section>
         </div>
       </main>
+      
+      {/* Meeting Link Modal */}
+      <MeetingLinkModal
+        isOpen={showMeetingLinkModal}
+        onClose={() => setShowMeetingLinkModal(false)}
+        onSave={handleSaveMeetingLink}
+        appointment={selectedAppointment}
+        darkMode={darkMode}
+      />
+
+      {/* Prescription Modal */}
+      <PrescriptionModal
+        isOpen={showPrescriptionModal}
+        onClose={() => {
+          setShowPrescriptionModal(false);
+          setSelectedAppointmentForPrescription(null);
+        }}
+        appointment={selectedAppointmentForPrescription}
+        onSubmit={handleCreatePrescription}
+        darkMode={darkMode}
+      />
     </div>
   );
 }

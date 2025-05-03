@@ -138,24 +138,9 @@ export default function PatientDashboard() {
 
       console.log('Received appointments:', response.data);
 
-      const appointmentsWithDoctorInfo = await Promise.all(
-        response.data.map(async (appointment) => {
-          try {
-            const doctorResponse = await axios.get(`/api/doctors/${appointment.doctorId}`);
-            return {
-              ...appointment,
-              doctorName: doctorResponse.data.fullName,
-              specialty: doctorResponse.data.specialization
-            };
-          } catch (error) {
-            console.error('Error fetching doctor info:', error);
-            return appointment;
-          }
-        })
-      );
-      
-      const sortedAppointments = appointmentsWithDoctorInfo.sort((a, b) => 
-        new Date(a.date) - new Date(b.date)
+      // The appointments are already populated with doctor info from the API
+      const sortedAppointments = response.data.sort((a, b) => 
+        new Date(a.scheduledFor) - new Date(b.scheduledFor)
       );
       
       console.log('Sorted appointments:', sortedAppointments);
@@ -223,22 +208,22 @@ export default function PatientDashboard() {
 
   // Format date for display
   const formatDate = (date) => {
-    if (!date) return 'N/A';
-    const d = new Date(date);
-    return d.toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
+    if (!date) return 'Not set';
+    return new Date(date).toLocaleDateString('en-US', { 
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
   // Format time for display
   const formatTime = (date) => {
-    if (!date) return 'N/A';
-    const d = new Date(date);
-    return d.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit' 
+    if (!date) return 'Not set';
+    return new Date(date).toLocaleTimeString('en-US', { 
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
     });
   };
 
@@ -485,22 +470,28 @@ export default function PatientDashboard() {
                 {appointments.filter(appointment => appointment.status === 'pending').length > 0 ? (
                   appointments.filter(appointment => appointment.status === 'pending').map((appointment) => (
                     <div key={appointment._id} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-gray-500">
-                              {appointment.doctorName?.split(' ').map(n => n[0]).join('') || 'D'}
-                            </span>
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <h4 className="text-lg font-medium">{appointment.doctorId?.fullName || 'Unknown Doctor'}</h4>
+                          <p className="text-sm text-gray-500">{appointment.doctorId?.specialization || 'No specialty'}</p>
+                          <div className="mt-2">
+                            <span className="text-sm font-medium">Consultation Reason: </span>
+                            <span className="text-sm text-gray-500">{appointment.reason}</span>
                           </div>
-                          <div>
-                            <h3 className="font-medium">Dr. {appointment.doctorName}</h3>
-                            <p className="text-sm text-gray-500">{appointment.specialty}</p>
-                            <p className="text-sm text-gray-500">Reason: {appointment.reason}</p>
-                          </div>
+                          {appointment.notes && (
+                            <div className="mt-2">
+                              <span className="text-sm font-medium">Additional Notes: </span>
+                              <span className="text-sm text-gray-500">{appointment.notes}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="text-right mt-4 md:mt-0">
-                          <p className="text-lg font-medium">{formatDate(appointment.date)}</p>
-                          <p className="text-sm text-gray-500">{appointment.time}</p>
+                          <p className="text-lg font-medium">
+                            {formatDate(appointment.scheduledFor)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {formatTime(appointment.scheduledFor)}
+                          </p>
                           <p className="text-sm text-yellow-500">Pending Approval</p>
                         </div>
                       </div>
@@ -516,30 +507,54 @@ export default function PatientDashboard() {
             <div>
               <h3 className="text-lg font-semibold mb-4">Upcoming Appointments</h3>
               <div className="space-y-4">
-                {appointments.filter(appointment => appointment.status === 'approved' || appointment.status === 'scheduled').length > 0 ? (
-                  appointments.filter(appointment => appointment.status === 'approved' || appointment.status === 'scheduled').map((appointment) => (
+                {appointments.filter(appointment => appointment.status === 'accepted').length > 0 ? (
+                  appointments.filter(appointment => appointment.status === 'accepted').map((appointment) => (
                     <div key={appointment._id} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-gray-500">
-                              {appointment.doctorName?.split(' ').map(n => n[0]).join('') || 'D'}
-                            </span>
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <h4 className="text-lg font-medium">{appointment.doctorId?.fullName || 'Unknown Doctor'}</h4>
+                          <p className="text-sm text-gray-500">{appointment.doctorId?.specialization || 'No specialty'}</p>
+                          <div className="mt-2">
+                            <span className="text-sm font-medium">Consultation Reason: </span>
+                            <span className="text-sm text-gray-500">{appointment.reason}</span>
                           </div>
-                          <div>
-                            <h3 className="font-medium">Dr. {appointment.doctorName}</h3>
-                            <p className="text-sm text-gray-500">{appointment.specialty}</p>
-                            <p className="text-sm text-gray-500">Reason: {appointment.reason}</p>
-                          </div>
+                          {appointment.notes && (
+                            <div className="mt-2">
+                              <span className="text-sm font-medium">Additional Notes: </span>
+                              <span className="text-sm text-gray-500">{appointment.notes}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="text-right mt-4 md:mt-0">
-                          <p className="text-lg font-medium">{formatDate(appointment.date)}</p>
-                          <p className="text-sm text-gray-500">{appointment.time}</p>
+                          <p className="text-lg font-medium">
+                            {formatDate(appointment.scheduledFor)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {formatTime(appointment.scheduledFor)}
+                          </p>
                           <p className="text-sm text-green-500">Confirmed</p>
                         </div>
                       </div>
-
-                      <div className="mt-4 flex flex-wrap gap-4">
+                      <div className="flex space-x-2 mt-4">
+                        {appointment.meetingLink ? (
+                          <a
+                            href={appointment.meetingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Join Meeting
+                          </a>
+                        ) : (
+                          <button
+                            className="flex-1 px-4 py-2 bg-gray-300 text-gray-500 rounded cursor-not-allowed flex items-center justify-center"
+                            disabled
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Meeting Link Pending
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setSelectedAppointment(appointment);

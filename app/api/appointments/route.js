@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import Appointment from '@/models/Appointment';
-import { connectToDatabase } from '@/lib/db';
-import mongoose from 'mongoose';
+import { connectToDatabase } from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 export async function POST(req) {
   try {
@@ -16,12 +15,8 @@ export async function POST(req) {
       );
     }
 
-    console.log('Session user:', session.user); // Debug log
-
     const body = await req.json();
     const { doctorId, patientId, date, time, reason, notes } = body;
-
-    console.log('Request body:', body); // Debug log
 
     // Validate required fields
     if (!doctorId || !patientId || !date || !time || !reason) {
@@ -34,76 +29,57 @@ export async function POST(req) {
     // Validate that the patientId matches the session user
     const userId = session.user._id || session.user.id;
     if (patientId !== userId) {
-      console.log('Patient ID mismatch:', { patientId, userId }); // Debug log
       return NextResponse.json(
         { message: 'Unauthorized to book appointment for another user' },
         { status: 403 }
       );
     }
 
-    try {
-      await connectToDatabase();
-    } catch (dbError) {
-      console.error('Database connection error:', dbError);
-      return NextResponse.json(
-        { message: 'Database connection failed' },
-        { status: 500 }
-      );
-    }
+    const { db } = await connectToDatabase();
 
     // Validate date and time
-    const appointmentDateTime = new Date(`${date}T${time}`);
-    if (isNaN(appointmentDateTime.getTime())) {
+    const scheduledFor = new Date(`${date}T${time}`);
+    if (isNaN(scheduledFor.getTime())) {
       return NextResponse.json(
         { message: 'Invalid date or time format' },
         { status: 400 }
       );
     }
 
-    if (appointmentDateTime < new Date()) {
+    if (scheduledFor < new Date()) {
       return NextResponse.json(
         { message: 'Cannot book appointments in the past' },
         { status: 400 }
       );
     }
 
-    try {
-      // Check for existing appointments at the same time
-      const existingAppointment = await Appointment.findOne({
-        doctorId: new mongoose.Types.ObjectId(doctorId),
-        date,
-        time,
-        status: { $in: ['pending', 'accepted'] }
-      });
+    // Check for existing appointments at the same time
+    const existingAppointment = await db.collection('appointments').findOne({
+      doctorId: new ObjectId(doctorId),
+      scheduledFor: scheduledFor,
+      status: { $in: ['pending', 'confirmed'] }
+    });
 
-      if (existingAppointment) {
-        return NextResponse.json(
-          { message: 'This time slot is already booked' },
-          { status: 400 }
-        );
-      }
-
-      // Create new appointment
-      const appointment = await Appointment.create({
-        patientId: new mongoose.Types.ObjectId(patientId),
-        doctorId: new mongoose.Types.ObjectId(doctorId),
-        date,
-        time,
-        reason,
-        notes: notes || null,
-        status: 'pending'
-      });
-
-      console.log('Created appointment:', appointment); // Debug log
-
-      return NextResponse.json(appointment, { status: 201 });
-    } catch (dbError) {
-      console.error('Database operation error:', dbError);
+    if (existingAppointment) {
       return NextResponse.json(
-        { message: 'Error creating appointment' },
-        { status: 500 }
+        { message: 'This time slot is already booked' },
+        { status: 400 }
       );
     }
+
+    // Create new appointment
+    const appointment = await db.collection('appointments').insertOne({
+      patientId: new ObjectId(patientId),
+      doctorId: new ObjectId(doctorId),
+      scheduledFor: scheduledFor,
+      reason: reason,
+      notes: notes || null,
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    return NextResponse.json({ appointment }, { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/appointments:', error);
     return NextResponse.json(
@@ -131,15 +107,7 @@ export async function GET(req) {
     const status = searchParams.get('status');
     const role = searchParams.get('role') || 'patient';
 
-    try {
-      await connectToDatabase();
-    } catch (dbError) {
-      console.error('Database connection error:', dbError);
-      return NextResponse.json(
-        { message: 'Database connection failed' },
-        { status: 500 }
-      );
-    }
+    const { db } = await connectToDatabase();
 
     let query = {};
     
@@ -154,7 +122,7 @@ export async function GET(req) {
         );
       }
       console.log('Patient ID:', userId); // Debug log
-      query.patientId = new mongoose.Types.ObjectId(userId);
+      query.patientId = new ObjectId(userId);
     } else if (role === 'doctor') {
       const userId = session.user._id || session.user.id;
       if (!userId) {
@@ -165,7 +133,7 @@ export async function GET(req) {
         );
       }
       console.log('Doctor ID:', userId); // Debug log
-      query.doctorId = new mongoose.Types.ObjectId(userId);
+      query.doctorId = new ObjectId(userId);
     }
 
     // Filter by status if provided
@@ -177,8 +145,7 @@ export async function GET(req) {
 
     try {
       // First, find the appointments
-      const appointments = await Appointment.find(query)
-        .sort({ date: 1, time: 1 });
+      const appointments = await db.collection('appointments').find(query).toArray();
 
       console.log('Found appointments:', appointments); // Debug log
 
@@ -187,17 +154,16 @@ export async function GET(req) {
         appointments.map(async (appointment) => {
           try {
             // Populate patient
-            const patient = await mongoose.model('User').findById(appointment.patientId)
-              .select('name email')
-              .lean();
+            const patient = await db.collection('users').findOne({ _id: appointment.patientId }, { projection: { name: 1, email: 1 } });
 
-            // Populate doctor
-            const doctor = await mongoose.model('Doctor').findById(appointment.doctorId)
-              .select('name email specialization')
-              .lean();
+            // Populate doctor from users collection
+            const doctor = await db.collection('users').findOne({ 
+              _id: appointment.doctorId,
+              role: 'doctor'
+            }, { projection: { fullName: 1, email: 1, specialization: 1 } });
 
             return {
-              ...appointment.toObject(),
+              ...appointment,
               patientId: patient,
               doctorId: doctor
             };

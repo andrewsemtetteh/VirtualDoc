@@ -24,7 +24,7 @@ export default function RootLayout({ children }) {
               try {
                 const savedTheme = localStorage.getItem('theme');
                 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+                const theme = savedTheme || 'dark';
                 document.documentElement.classList.toggle('dark', theme === 'dark');
                 localStorage.setItem('theme', theme);
               } catch (e) {
