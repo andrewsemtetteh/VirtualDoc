@@ -2,12 +2,14 @@ import { Download, Edit, Trash2, FileText, Clock, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { Dialog } from '@headlessui/react';
+import PrescriptionModal from './PrescriptionModal';
 
 export default function PrescriptionsSection({ darkMode }) {
   const [prescriptions, setPrescriptions] = useState([]);
   const [editingPrescription, setEditingPrescription] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [prescriptionToDelete, setPrescriptionToDelete] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     fetchPrescriptions();
@@ -83,8 +85,7 @@ Date: ${new Date(prescription.createdAt).toLocaleDateString()}
 
   const handleEdit = (prescription) => {
     setEditingPrescription(prescription);
-    // TODO: Implement edit modal
-    toast.info('Edit functionality coming soon');
+    setIsEditModalOpen(true);
   };
 
   const handleDelete = async (prescription) => {
@@ -110,6 +111,32 @@ Date: ${new Date(prescription.createdAt).toLocaleDateString()}
     } finally {
       setIsDeleteModalOpen(false);
       setPrescriptionToDelete(null);
+    }
+  };
+
+  const handleUpdatePrescription = async (appointmentId, prescriptionData) => {
+    try {
+      const response = await fetch(`/api/prescriptions/${editingPrescription._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(prescriptionData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update prescription');
+      }
+
+      // Refresh prescriptions
+      await fetchPrescriptions();
+      toast.success('Prescription updated successfully');
+    } catch (error) {
+      console.error('Error updating prescription:', error);
+      toast.error('Failed to update prescription');
+    } finally {
+      setIsEditModalOpen(false);
+      setEditingPrescription(null);
     }
   };
 
@@ -306,6 +333,19 @@ Date: ${new Date(prescription.createdAt).toLocaleDateString()}
           </Dialog.Panel>
         </div>
       </Dialog>
+
+      {/* Edit Prescription Modal */}
+      <PrescriptionModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingPrescription(null);
+        }}
+        appointment={editingPrescription}
+        onSubmit={handleUpdatePrescription}
+        darkMode={darkMode}
+        initialData={editingPrescription}
+      />
     </div>
   );
 } 

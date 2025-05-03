@@ -21,9 +21,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [mounted, setMounted] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [currentSection, setCurrentSection] = useState('dashboard');
@@ -49,6 +47,7 @@ export default function AdminDashboard() {
   
   const notificationsRef = useRef(null);
   const profileRef = useRef(null);
+  const sectionsRef = useRef([]);
 
   const [patientStats, setPatientStats] = useState({
     totalPatients: 0,
@@ -1935,274 +1934,244 @@ export default function AdminDashboard() {
     }
   };
 
-  // Add logout handler
-  const handleLogout = async () => {
-    await signOut({ redirect: false });
-    router.push('/');
+  const scrollToSection = (sectionId) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   if (!mounted) return null;
 
   return (
-    <div className={`flex h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-green-50 to-gray-100 text-gray-900'} transition-all duration-300`}>
-      {/* Sidebar */}
-      <div className={`${collapsed ? 'w-20' : 'w-64'} ${darkMode ? 'bg-gray-800' : 'bg-white'} transition-all duration-300 shadow-lg fixed h-full z-50`}>
-        {/* Logo */}
-        <div className={`flex items-center p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} h-16`}>
+    <div className={`flex flex-col h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-green-50 to-gray-100 text-gray-900'} transition-all duration-300`}>
+      {/* Header */}
+      <header className={`flex items-center justify-between px-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm transition-all duration-300 h-16 border-b sticky top-0 z-50`}>
+        <div className="flex items-center">
           <div className="text-green-700 mr-2">
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="18" cy="18" r="18" fill="currentColor" fillOpacity="0.2" />
               <path d="M11 18C11 14.134 14.134 11 18 11V25C14.134 25 11 21.866 11 18Z" fill="currentColor" />
             </svg>
           </div>
-          {!collapsed && <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-800">VirtualDoc</span>}
+          <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-800">VirtualDoc</span>
         </div>
-
-        {/* Menu */}
-        <div className="p-4">
-          {!collapsed && <div className="text-sm font-medium text-gray-500 mb-4">MAIN MENU</div>}
-          
-          <div className="space-y-2">
-            {/* Dashboard */}
-            <div 
-              onClick={() => handleNavigation('dashboard')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                currentSection === 'dashboard' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <LayoutDashboard size={20} />
-              {!collapsed && <span className="ml-3 font-medium">Dashboard</span>}
-            </div>
-            
-            {/* Appointments */}
-            <div 
-              onClick={() => handleNavigation('appointments')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                currentSection === 'appointments' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <Calendar size={20} />
-              {!collapsed && <span className="ml-3">Appointments</span>}
-            </div>
-            
-            {/* Patients */}
-            <div 
-              onClick={() => handleNavigation('patients')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                currentSection === 'patients' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <Users size={20} />
-              {!collapsed && <span className="ml-3">Patients</span>}
-            </div>
-            
-            {/* Doctors */}
-            <div 
-              onClick={() => handleNavigation('doctors')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                currentSection === 'doctors' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <User size={20} />
-              {!collapsed && <span className="ml-3">Doctors</span>}
-            </div>
-            
-            {/* Medical Records */}
-            <div 
-              onClick={() => handleNavigation('medical-records')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                currentSection === 'medical-records' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <FileText size={20} />
-              {!collapsed && <span className="ml-3">Medical Records</span>}
-            </div>
+        
+        <div className="flex items-center space-x-4">
+          <div className="relative hidden md:block">
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'} h-5 w-5 transition-colors duration-300`} />
+            <input
+              type="text"
+              placeholder="Search..."
+              className={`pl-10 pr-4 py-2 rounded-full border transition-all duration-300 ${
+                darkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500' 
+                  : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-gray-300'
+              } w-64 focus:outline-none`}
+            />
           </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className={`flex-1 flex flex-col overflow-hidden ${collapsed ? 'ml-20' : 'ml-64'}`}>
-        {/* Header */}
-        <header className={`flex items-center justify-between px-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm transition-all duration-300 h-16 border-b sticky top-0 z-40`}>
-          <div className="flex items-center">
-            <button onClick={toggleSidebar} className={`p-2 rounded-full transition-all duration-300 ${
+          <button 
+            onClick={() => setDarkMode(!darkMode)} 
+            className={`p-2 rounded-full transition-all duration-300 ${
               darkMode 
                 ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
                 : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
-            }`}>
-              {collapsed ? <Menu size={20} /> : <X size={20} />}
-            </button>
-            <h1 className="ml-4 text-2xl font-bold">
-              {currentSection === 'medical-records' ? 'Medical Records' : currentSection.charAt(0).toUpperCase() + currentSection.slice(1)}
-            </h1>
-          </div>
+            }`}
+          >
+            {mounted && (darkMode ? <Sun size={20} /> : <Moon size={20} />)}
+          </button>
           
-          <div className="flex items-center space-x-4">
-            <div className="relative hidden md:block">
-              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'} h-5 w-5 transition-colors duration-300`} />
-              <input
-                type="text"
-                placeholder="Search..."
-                className={`pl-10 pr-4 py-2 rounded-full border transition-all duration-300 ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500' 
-                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-gray-300'
-                } w-64 focus:outline-none`}
-              />
-            </div>
-
-            <button 
-              onClick={toggleDarkMode} 
-              className={`p-2 rounded-full transition-all duration-300 ${
-                darkMode 
-                  ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
-                  : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+          <div className="relative" ref={notificationsRef}>
+            <button
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              className={`p-2 rounded-full transition-colors ${
+                darkMode
+                  ? 'hover:bg-gray-700'
+                  : 'hover:bg-gray-100'
               }`}
             >
-              {mounted && (darkMode ? <Sun size={20} /> : <Moon size={20} />)}
-            </button>
-            
-            <div className="relative" ref={notificationsRef}>
-              <button
-                onClick={toggleNotifications}
-                className={`p-2 rounded-full transition-colors ${
-                  darkMode
-                    ? 'hover:bg-gray-700'
-                    : 'hover:bg-gray-100'
-                }`}
-              >
-                <Bell className={`h-6 w-6 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                {notifications.length > 0 && (
-                  <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white" />
-                )}
-              </button>
-
-              {/* Notifications Panel */}
-              {notificationsOpen && (
-                <div className={`absolute right-0 mt-2 w-80 rounded-md shadow-lg ${
-                  darkMode ? 'bg-gray-800' : 'bg-white'
-                } ring-1 ring-black ring-opacity-5`}>
-                  <div className="p-4">
-                    <h3 className={`text-lg font-medium mb-4 ${
-                      darkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      Notifications
-                    </h3>
-                    {notifications.length === 0 ? (
-                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        No new notifications
-                      </p>
-                    ) : (
-                      <div className="space-y-4">
-                        {notifications.map((notification, index) => (
-                          <div
-                            key={index}
-                            className={`p-3 rounded-lg ${
-                              darkMode ? 'bg-gray-700' : 'bg-gray-50'
-                            }`}
-                          >
-                            <div className={`font-medium text-sm mb-1 ${
-                              darkMode ? 'text-white' : 'text-gray-900'
-                            }`}>
-                              {notification.title}
-                            </div>
-                            <p className={`text-sm mb-2 ${
-                              darkMode ? 'text-gray-400' : 'text-gray-500'
-                            }`}>
-                              {notification.message}
-                            </p>
-                            <span className={`text-xs ${
-                              darkMode ? 'text-gray-500' : 'text-gray-400'
-                            }`}>
-                              {notification.time}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <Bell className={`h-6 w-6 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+              {notifications.length > 0 && (
+                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white" />
               )}
-            </div>
-            
-            <HMenu as="div" className="relative" ref={profileRef}>
-              <HMenu.Button className={`flex items-center space-x-3 p-2 focus:outline-none rounded-lg ${
-                darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-              }`}>
-                <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
-                  {session?.user?.profilePicture ? (
-                    <Image 
-                      src={session.user.profilePicture} 
-                      alt={session.user.name} 
-                      width={32} 
-                      height={32} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User className="h-5 w-5 text-white" />
-                  )}
-                </div>
-                <div className="text-left hidden md:block">
-                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                    {session?.user?.name || 'Andrew Sem Tetteh'}
-                  </p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Administrator</p>
-                </div>
-              </HMenu.Button>
+            </button>
 
-              <Transition
-                as={Fragment}
-                enter="transition ease-out duration-100"
-                enterFrom="transform opacity-0 scale-95"
-                enterTo="transform opacity-100 scale-100"
-                leave="transition ease-in duration-75"
-                leaveFrom="transform opacity-100 scale-100"
-                leaveTo="transform opacity-0 scale-95"
-              >
-                <HMenu.Items className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg focus:outline-none ${
-                  darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-                }`}>
-                  <div className="py-1">
-                    <HMenu.Item>
-                      {({ active }) => (
-                        <button
-                          onClick={() => signOut()}
-                          className={`${
-                            active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
-                          } block w-full text-left px-4 py-2 text-sm ${
-                            darkMode ? 'text-gray-200' : 'text-gray-700'
+            {/* Notifications Panel */}
+            {notificationsOpen && (
+              <div className={`absolute right-0 mt-2 w-80 rounded-md shadow-lg ${
+                darkMode ? 'bg-gray-800' : 'bg-white'
+              } ring-1 ring-black ring-opacity-5`}>
+                <div className="p-4">
+                  <h3 className={`text-lg font-medium mb-4 ${
+                    darkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    Notifications
+                  </h3>
+                  {notifications.length === 0 ? (
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      No new notifications
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {notifications.map((notification, index) => (
+                        <div
+                          key={index}
+                          className={`p-3 rounded-lg ${
+                            darkMode ? 'bg-gray-700' : 'bg-gray-50'
                           }`}
                         >
-                          <div className="flex items-center">
-                            <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                            Sign Out
+                          <div className={`font-medium text-sm mb-1 ${
+                            darkMode ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            {notification.title}
                           </div>
-                        </button>
-                      )}
-                    </HMenu.Item>
-                  </div>
-                </HMenu.Items>
-              </Transition>
-            </HMenu>
+                          <p className={`text-sm mb-2 ${
+                            darkMode ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
+                            {notification.message}
+                          </p>
+                          <span className={`text-xs ${
+                            darkMode ? 'text-gray-500' : 'text-gray-400'
+                          }`}>
+                            {notification.time}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        </header>
+          
+          <HMenu as="div" className="relative" ref={profileRef}>
+            <HMenu.Button className={`flex items-center space-x-3 p-2 focus:outline-none rounded-lg ${
+              darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+            }`}>
+              <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
+                {session?.user?.profilePicture ? (
+                  <Image 
+                    src={session.user.profilePicture} 
+                    alt={session.user.name} 
+                    width={32} 
+                    height={32} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="h-5 w-5 text-white" />
+                )}
+              </div>
+              <div className="text-left hidden md:block">
+                <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                  {session?.user?.name || 'Andrew Sem Tetteh'}
+                </p>
+                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Administrator</p>
+              </div>
+            </HMenu.Button>
 
-        {/* Dynamic Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {renderContent()}
-        </main>
-      </div>
+            <Transition
+              as={Fragment}
+              enter="transition ease-out duration-100"
+              enterFrom="transform opacity-0 scale-95"
+              enterTo="transform opacity-100 scale-100"
+              leave="transition ease-in duration-75"
+              leaveFrom="transform opacity-100 scale-100"
+              leaveTo="transform opacity-0 scale-95"
+            >
+              <HMenu.Items className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg focus:outline-none ${
+                darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+              }`}>
+                <div className="py-1">
+                  <HMenu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={() => signOut()}
+                        className={`${
+                          active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
+                        } block w-full text-left px-4 py-2 text-sm ${
+                          darkMode ? 'text-gray-200' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                          Sign Out
+                        </div>
+                      </button>
+                    )}
+                  </HMenu.Item>
+                </div>
+              </HMenu.Items>
+            </Transition>
+          </HMenu>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto">
+        {/* Quick Navigation */}
+        <div className={`sticky top-16 z-40 ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm border-b border-gray-200 dark:border-gray-700`}>
+          <div className="flex space-x-4 p-4 overflow-x-auto">
+            {['dashboard', 'appointments', 'patients', 'doctors', 'medical-records'].map((section) => (
+              <button
+                key={section}
+                onClick={() => scrollToSection(section)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
+                  currentSection === section
+                    ? darkMode
+                      ? 'bg-green-700 text-white'
+                      : 'bg-green-100 text-green-800'
+                    : darkMode
+                      ? 'text-gray-300 hover:bg-gray-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {section.charAt(0).toUpperCase() + section.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content Sections */}
+        <div className="p-4 md:p-6 space-y-8">
+          {/* Dashboard Section */}
+          <section id="dashboard" className="scroll-mt-24">
+            <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
+            {/* Dashboard content */}
+            {renderContent('dashboard')}
+          </section>
+
+          {/* Appointments Section */}
+          <section id="appointments" className="scroll-mt-24">
+            <h2 className="text-2xl font-bold mb-6">Appointments</h2>
+            {/* Appointments content */}
+            {renderContent('appointments')}
+          </section>
+
+          {/* Patients Section */}
+          <section id="patients" className="scroll-mt-24">
+            <h2 className="text-2xl font-bold mb-6">Patients</h2>
+            {/* Patients content */}
+            {renderContent('patients')}
+          </section>
+
+          {/* Doctors Section */}
+          <section id="doctors" className="scroll-mt-24">
+            <h2 className="text-2xl font-bold mb-6">Doctors</h2>
+            {/* Doctors content */}
+            {renderContent('doctors')}
+          </section>
+
+          {/* Medical Records Section */}
+          <section id="medical-records" className="scroll-mt-24">
+            <h2 className="text-2xl font-bold mb-6">Medical Records</h2>
+            {/* Medical Records content */}
+            {renderContent('medical-records')}
+          </section>
+        </div>
+      </main>
+
+      {/* Modals */}
       {showRejectionModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} max-w-md w-full mx-4`}>

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { FileText, X } from 'lucide-react';
 
-export default function PrescriptionModal({ isOpen, onClose, appointment, onSubmit, darkMode }) {
+export default function PrescriptionModal({ isOpen, onClose, appointment, onSubmit, darkMode, initialData }) {
   const [formData, setFormData] = useState({
     diagnosis: '',
     treatmentPlan: '',
@@ -30,6 +30,20 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, onSubm
     };
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        diagnosis: initialData.diagnosis || '',
+        treatmentPlan: initialData.treatmentPlan || '',
+        medication: initialData.medication || '',
+        dosage: initialData.dosage || '',
+        frequency: initialData.frequency || '',
+        duration: initialData.duration || '',
+        additionalInstructions: initialData.additionalInstructions || ''
+      });
+    }
+  }, [initialData]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
@@ -55,7 +69,9 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, onSubm
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
             <FileText className={`h-6 w-6 ${darkMode ? 'text-green-400' : 'text-green-500'} mr-2`} />
-            <h2 className="text-xl font-semibold">Create Prescription</h2>
+            <h2 className="text-xl font-semibold">
+              {initialData ? 'Edit Prescription' : 'Create Prescription'}
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -65,7 +81,7 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, onSubm
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="diagnosis" className={`block text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
               Diagnosis
@@ -76,12 +92,12 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, onSubm
               value={formData.diagnosis}
               onChange={handleChange}
               required
+              rows={3}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
                   : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
               }`}
-              rows="3"
             />
           </div>
 
@@ -95,12 +111,12 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, onSubm
               value={formData.treatmentPlan}
               onChange={handleChange}
               required
+              rows={3}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
                   : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
               }`}
-              rows="3"
             />
           </div>
 
@@ -161,23 +177,25 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, onSubm
             </div>
           </div>
 
-          <div>
-            <label htmlFor="duration" className={`block text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
-              Duration
-            </label>
-            <input
-              id="duration"
-              type="text"
-              name="duration"
-              value={formData.duration}
-              onChange={handleChange}
-              required
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="duration" className={`block text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                Duration
+              </label>
+              <input
+                id="duration"
+                type="text"
+                name="duration"
+                value={formData.duration}
+                onChange={handleChange}
+                required
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+            </div>
           </div>
 
           <div>
@@ -189,32 +207,32 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, onSubm
               name="additionalInstructions"
               value={formData.additionalInstructions}
               onChange={handleChange}
+              rows={3}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
                   : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
               }`}
-              rows="3"
             />
           </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="flex justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
-              className={`px-4 py-2 text-sm font-medium rounded-md ${
+              className={`px-4 py-2 rounded-md ${
                 darkMode 
-                  ? 'text-gray-300 bg-gray-700 hover:bg-gray-600' 
-                  : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600"
+              className="px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600"
             >
-              Issue Prescription
+              {initialData ? 'Update Prescription' : 'Create Prescription'}
             </button>
           </div>
         </form>

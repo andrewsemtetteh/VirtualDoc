@@ -158,6 +158,130 @@ export default function PatientDashboard() {
     }
   };
 
+  const handleDownloadPrescription = async (prescription) => {
+    try {
+      // Create text content for the prescription
+      const textContent = `
+PRESCRIPTION
+============
+
+Patient: ${session?.user?.name || 'Unknown Patient'}
+Date: ${formatDate(prescription.createdAt)}
+
+DOCTOR INFORMATION
+----------------
+Name: Dr. ${prescription.doctor?.fullName || 'Unknown Doctor'}
+Specialization: ${prescription.doctor?.specialization || 'General Practitioner'}
+
+DIAGNOSIS
+---------
+${prescription.diagnosis || 'Not specified'}
+
+TREATMENT PLAN
+-------------
+${prescription.treatmentPlan || 'Not specified'}
+
+MEDICATION DETAILS
+----------------
+Medication: ${prescription.medication}
+Dosage: ${prescription.dosage}
+Frequency: ${prescription.frequency}
+Duration: ${prescription.duration}
+
+${prescription.notes ? `
+ADDITIONAL NOTES
+---------------
+${prescription.notes}
+` : ''}
+
+STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
+`;
+
+      // Create a Blob with the text content
+      const blob = new Blob([textContent], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `prescription-${formatDate(prescription.createdAt)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Prescription downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading prescription:', error);
+      toast.error('Failed to download prescription');
+    }
+  };
+
+  const handleDownloadAllPrescriptions = async (prescriptions) => {
+    try {
+      // Create text content for all prescriptions
+      const textContent = prescriptions.map(prescription => `
+PRESCRIPTION
+============
+
+Patient: ${session?.user?.name || 'Unknown Patient'}
+Date: ${formatDate(prescription.createdAt)}
+
+DOCTOR INFORMATION
+----------------
+Name: Dr. ${prescription.doctor?.fullName || 'Unknown Doctor'}
+Specialization: ${prescription.doctor?.specialization || 'General Practitioner'}
+
+DIAGNOSIS
+---------
+${prescription.diagnosis || 'Not specified'}
+
+TREATMENT PLAN
+-------------
+${prescription.treatmentPlan || 'Not specified'}
+
+MEDICATION DETAILS
+----------------
+Medication: ${prescription.medication}
+Dosage: ${prescription.dosage}
+Frequency: ${prescription.frequency}
+Duration: ${prescription.duration}
+
+${prescription.notes ? `
+ADDITIONAL NOTES
+---------------
+${prescription.notes}
+` : ''}
+
+STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
+
+----------------------------------------
+`).join('\n');
+
+      // Create a Blob with the text content
+      const blob = new Blob([textContent], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `all-prescriptions-${formatDate(new Date())}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('All prescriptions downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading prescriptions:', error);
+      toast.error('Failed to download prescriptions');
+    }
+  };
+
   useEffect(() => {
     console.log('Session status:', status);
     console.log('Session data:', session);
@@ -458,6 +582,36 @@ export default function PatientDashboard() {
           </div>
         </section>
 
+        {/* Find Doctor Section */}
+        <section id="find-doctor" className="p-6 md:p-8">
+          <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <h2 className="text-xl font-bold mb-6">Find a Doctor</h2>
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+              </div>
+            ) : error ? (
+              <div className="text-center text-red-500">{error}</div>
+            ) : doctors.length === 0 ? (
+              <div className="text-center text-gray-500">No doctors available</div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {doctors.map((doctor) => (
+                  <DoctorCard
+                    key={doctor._id}
+                    doctor={doctor}
+                    darkMode={darkMode}
+                    onBookAppointment={() => {
+                      setSelectedDoctor(doctor);
+                      setShowBookingModal(true);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* Appointments Section */}
         <section id="appointments" className="p-6 md:p-8">
           <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
@@ -584,90 +738,97 @@ export default function PatientDashboard() {
           </div>
         </section>
 
-        {/* Find Doctor Section */}
-        <section id="find-doctor" className="p-6 md:p-8">
-          <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-            <h2 className="text-xl font-bold mb-6">Find a Doctor</h2>
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-              </div>
-            ) : error ? (
-              <div className="text-center text-red-500">{error}</div>
-            ) : doctors.length === 0 ? (
-              <div className="text-center text-gray-500">No doctors available</div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {doctors.map((doctor) => (
-                  <DoctorCard
-                    key={doctor._id}
-                    doctor={doctor}
-                    darkMode={darkMode}
-                    onBookAppointment={() => {
-                      setSelectedDoctor(doctor);
-                      setShowBookingModal(true);
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
         {/* Prescriptions Section */}
-        <section id="prescriptions" className="p-4 md:p-8">
+        <section id="prescriptions" className="p-6 md:p-8">
           <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-              <h2 className="text-xl font-bold">Prescriptions</h2>
+              <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Prescriptions</h2>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={() => handleDownloadAllPrescriptions(dashboardData.prescriptions)}
+                  className={`px-4 py-2 ${darkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'} text-white rounded flex items-center`}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download All
+                </button>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {dashboardData.prescriptions.length > 0 ? (
                 dashboardData.prescriptions.map((prescription) => (
-                  <div key={prescription._id} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <div key={prescription._id} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'} transition-colors duration-200`}>
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500">
-                            {prescription.doctorName?.split(' ').map(n => n[0]).join('') || 'D'}
+                        <div className={`w-10 h-10 rounded-full ${darkMode ? 'bg-gray-600' : 'bg-gray-200'} flex items-center justify-center`}>
+                          <span className={`${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+                            {prescription.doctor?.fullName?.split(' ').map(n => n[0]).join('') || 'D'}
                           </span>
                         </div>
                         <div>
-                          <h3 className="font-medium">Dr. {prescription.doctorName}</h3>
-                          <p className="text-sm text-gray-500">{formatDate(prescription.createdAt)}</p>
+                          <h3 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            Dr. {prescription.doctor?.fullName || 'Unknown Doctor'}
+                          </h3>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {prescription.doctor?.specialization || 'General Practitioner'}
+                          </p>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {formatDate(prescription.createdAt)}
+                          </p>
                         </div>
                       </div>
-                      <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                      <button 
+                        onClick={() => handleDownloadPrescription(prescription)}
+                        className={`p-2 ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'} rounded-full hover:bg-opacity-10 hover:bg-white`}
+                      >
                         <Download size={18} />
                       </button>
                     </div>
 
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-sm font-medium mb-1">Medication</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{prescription.medication}</p>
+                        <h4 className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Diagnosis</h4>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{prescription.diagnosis || 'Not specified'}</p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium mb-1">Dosage</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{prescription.dosage}</p>
+                        <h4 className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Treatment Plan</h4>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{prescription.treatmentPlan || 'Not specified'}</p>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-medium mb-1">Duration</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{prescription.duration}</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h4 className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Medication</h4>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{prescription.medication}</p>
+                        </div>
+                        <div>
+                          <h4 className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Dosage</h4>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{prescription.dosage}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h4 className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Frequency</h4>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{prescription.frequency}</p>
+                        </div>
+                        <div>
+                          <h4 className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Duration</h4>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{prescription.duration}</p>
+                        </div>
                       </div>
                       {prescription.notes && (
                         <div>
-                          <h4 className="text-sm font-medium mb-1">Notes</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">{prescription.notes}</p>
+                          <h4 className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Additional Notes</h4>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{prescription.notes}</p>
                         </div>
                       )}
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">Status</span>
+                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Status</span>
                         <span className={`text-sm font-medium ${
-                          prescription.status === 'active' ? 'text-green-500' : 'text-yellow-500'
+                          prescription.status === 'active' 
+                            ? darkMode ? 'text-green-400' : 'text-green-600'
+                            : darkMode ? 'text-yellow-400' : 'text-yellow-600'
                         }`}>
                           {prescription.status === 'active' ? 'Active' : 'Pending Refill'}
                         </span>
@@ -677,7 +838,15 @@ export default function PatientDashboard() {
                 ))
               ) : (
                 <div className="col-span-full text-center py-8">
-                  <p className="text-gray-500">No active prescriptions</p>
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${darkMode ? 'bg-gray-600' : 'bg-gray-100'} mb-4`}>
+                    <FileText className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} size={32} />
+                  </div>
+                  <p className={`text-lg font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    No active prescriptions
+                  </p>
+                  <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    Your prescriptions will appear here when prescribed by your doctor
+                  </p>
                 </div>
               )}
             </div>
@@ -700,3 +869,5 @@ export default function PatientDashboard() {
     </div>
   );
 }
+
+
