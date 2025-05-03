@@ -41,8 +41,9 @@ export const authOptions = {
           });
 
           // Return user object without password
-          const userData = {
+          return {
             id: user._id.toString(),
+            _id: user._id.toString(), // Include both id and _id for compatibility
             email: user.email,
             name: user.fullName,
             role: user.role,
@@ -50,11 +51,6 @@ export const authOptions = {
             specialization: user.specialization,
             profilePicture: user.profilePicture
           };
-
-          // For debugging
-          console.log('Returning user data:', userData);
-
-          return userData;
         } catch (error) {
           console.error('Authorization error:', error);
           throw new Error(error.message);
@@ -64,35 +60,27 @@ export const authOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      // For debugging
-      console.log('JWT Callback - Input:', { token, user });
-
       if (user) {
+        // Include all user data in the token
+        token.id = user.id;
+        token._id = user._id;
         token.role = user.role;
         token.status = user.status;
         token.specialization = user.specialization;
         token.profilePicture = user.profilePicture;
       }
-
-      // For debugging
-      console.log('JWT Callback - Output token:', token);
-
       return token;
     },
     async session({ session, token }) {
-      // For debugging
-      console.log('Session Callback - Input:', { session, token });
-
       if (token) {
+        // Include all token data in the session
+        session.user.id = token.id;
+        session.user._id = token._id;
         session.user.role = token.role;
         session.user.status = token.status;
         session.user.specialization = token.specialization;
         session.user.profilePicture = token.profilePicture;
       }
-
-      // For debugging
-      console.log('Session Callback - Output session:', session);
-
       return session;
     }
   },

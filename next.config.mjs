@@ -12,7 +12,7 @@ const nextConfig = {
     }
     return config;
   },
-  // Configure Socket.io and Twilio endpoints
+  // Configure Socket.io endpoints
   async rewrites() {
     return [
       {
@@ -23,10 +23,7 @@ const nextConfig = {
   },
   // Environment variables
   env: {
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
-    TWILIO_API_KEY: process.env.TWILIO_API_KEY,
-    TWILIO_API_SECRET: process.env.TWILIO_API_SECRET
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL
   }
 };
 

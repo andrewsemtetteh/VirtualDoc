@@ -1,276 +1,227 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getIO } from '@/lib/socket';
-import { ObjectId } from 'mongodb';
-import { emitDoctorUpdate } from '@/lib/socket';
+import Appointment from '@/models/Appointment';
+import { connectToDatabase } from '@/lib/db';
+import mongoose from 'mongoose';
 
-// Get appointments for a user
-export async function GET(request) {
+export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
+    
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-    const { db } = await connectToDatabase();
+    console.log('Session user:', session.user); // Debug log
+
+    const body = await req.json();
+    const { doctorId, patientId, date, time, reason, notes } = body;
+
+    console.log('Request body:', body); // Debug log
+
+    // Validate required fields
+    if (!doctorId || !patientId || !date || !time || !reason) {
+      return NextResponse.json(
+        { message: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Validate that the patientId matches the session user
+    const userId = session.user._id || session.user.id;
+    if (patientId !== userId) {
+      console.log('Patient ID mismatch:', { patientId, userId }); // Debug log
+      return NextResponse.json(
+        { message: 'Unauthorized to book appointment for another user' },
+        { status: 403 }
+      );
+    }
+
+    try {
+      await connectToDatabase();
+    } catch (dbError) {
+      console.error('Database connection error:', dbError);
+      return NextResponse.json(
+        { message: 'Database connection failed' },
+        { status: 500 }
+      );
+    }
+
+    // Validate date and time
+    const appointmentDateTime = new Date(`${date}T${time}`);
+    if (isNaN(appointmentDateTime.getTime())) {
+      return NextResponse.json(
+        { message: 'Invalid date or time format' },
+        { status: 400 }
+      );
+    }
+
+    if (appointmentDateTime < new Date()) {
+      return NextResponse.json(
+        { message: 'Cannot book appointments in the past' },
+        { status: 400 }
+      );
+    }
+
+    try {
+      // Check for existing appointments at the same time
+      const existingAppointment = await Appointment.findOne({
+        doctorId: new mongoose.Types.ObjectId(doctorId),
+        date,
+        time,
+        status: { $in: ['pending', 'accepted'] }
+      });
+
+      if (existingAppointment) {
+        return NextResponse.json(
+          { message: 'This time slot is already booked' },
+          { status: 400 }
+        );
+      }
+
+      // Create new appointment
+      const appointment = await Appointment.create({
+        patientId: new mongoose.Types.ObjectId(patientId),
+        doctorId: new mongoose.Types.ObjectId(doctorId),
+        date,
+        time,
+        reason,
+        notes: notes || null,
+        status: 'pending'
+      });
+
+      console.log('Created appointment:', appointment); // Debug log
+
+      return NextResponse.json(appointment, { status: 201 });
+    } catch (dbError) {
+      console.error('Database operation error:', dbError);
+      return NextResponse.json(
+        { message: 'Error creating appointment' },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error('Error in POST /api/appointments:', error);
+    return NextResponse.json(
+      { message: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(req) {
+  try {
+    const session = await getServerSession(authOptions);
     
-    const { searchParams } = new URL(request.url);
+    if (!session) {
+      console.error('No session found');
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    console.log('Session user:', session.user); // Debug log
+
+    const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
-    const patientId = session.user.id;
+    const role = searchParams.get('role') || 'patient';
+
+    try {
+      await connectToDatabase();
+    } catch (dbError) {
+      console.error('Database connection error:', dbError);
+      return NextResponse.json(
+        { message: 'Database connection failed' },
+        { status: 500 }
+      );
+    }
+
+    let query = {};
     
-    let query = { patientId };
-    
+    // Filter by role (patient or doctor)
+    if (role === 'patient') {
+      const userId = session.user._id || session.user.id;
+      if (!userId) {
+        console.error('No user ID found in session:', session.user);
+        return NextResponse.json(
+          { message: 'User ID not found in session' },
+          { status: 400 }
+        );
+      }
+      console.log('Patient ID:', userId); // Debug log
+      query.patientId = new mongoose.Types.ObjectId(userId);
+    } else if (role === 'doctor') {
+      const userId = session.user._id || session.user.id;
+      if (!userId) {
+        console.error('No user ID found in session:', session.user);
+        return NextResponse.json(
+          { message: 'User ID not found in session' },
+          { status: 400 }
+        );
+      }
+      console.log('Doctor ID:', userId); // Debug log
+      query.doctorId = new mongoose.Types.ObjectId(userId);
+    }
+
+    // Filter by status if provided
     if (status) {
       query.status = status;
     }
-    
-    const appointments = await db.collection('appointments').find(query).toArray();
-    
-    return NextResponse.json(appointments);
+
+    console.log('Query:', query); // Debug log
+
+    try {
+      // First, find the appointments
+      const appointments = await Appointment.find(query)
+        .sort({ date: 1, time: 1 });
+
+      console.log('Found appointments:', appointments); // Debug log
+
+      // Then, populate the references
+      const populatedAppointments = await Promise.all(
+        appointments.map(async (appointment) => {
+          try {
+            // Populate patient
+            const patient = await mongoose.model('User').findById(appointment.patientId)
+              .select('name email')
+              .lean();
+
+            // Populate doctor
+            const doctor = await mongoose.model('Doctor').findById(appointment.doctorId)
+              .select('name email specialization')
+              .lean();
+
+            return {
+              ...appointment.toObject(),
+              patientId: patient,
+              doctorId: doctor
+            };
+          } catch (error) {
+            console.error('Error populating references:', error);
+            return appointment;
+          }
+        })
+      );
+
+      console.log('Populated appointments:', populatedAppointments); // Debug log
+
+      return NextResponse.json(populatedAppointments);
+    } catch (findError) {
+      console.error('Error finding appointments:', findError);
+      return NextResponse.json(
+        { message: 'Error fetching appointments', error: findError.message },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error('Error fetching appointments:', error);
+    console.error('Error in GET /api/appointments:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch appointments' },
-      { status: 500 }
-    );
-  }
-}
-
-// Create a new appointment
-export async function POST(request) {
-  try {
-    // Validate session
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Get request body
-    const body = await request.json();
-    const { doctorId, date, time, reason, notes } = body;
-
-    // Validate required fields
-    const requiredFields = ['doctorId', 'date', 'time', 'reason'];
-    const missingFields = requiredFields.filter(field => !body[field]);
-    
-    if (missingFields.length > 0) {
-      return NextResponse.json(
-        { error: `Missing required fields: ${missingFields.join(', ')}` },
-        { status: 400 }
-      );
-    }
-
-    // Validate date format and future date
-    const appointmentDate = new Date(`${date}T${time}`);
-    if (isNaN(appointmentDate.getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid date or time format' },
-        { status: 400 }
-      );
-    }
-
-    if (appointmentDate < new Date()) {
-      return NextResponse.json(
-        { error: 'Cannot book appointments in the past' },
-        { status: 400 }
-      );
-    }
-
-    // Connect to database
-    const { db } = await connectToDatabase();
-
-    // Validate doctor exists
-    const doctor = await db.collection('users').findOne({ 
-      _id: new ObjectId(doctorId),
-      role: 'doctor'
-    });
-
-    if (!doctor) {
-      return NextResponse.json(
-        { error: 'Doctor not found' },
-        { status: 404 }
-      );
-    }
-
-    // Create appointment object
-    const appointment = {
-      patientId: new ObjectId(session.user.id),
-      doctorId: new ObjectId(doctorId),
-      date,
-      time,
-      reason,
-      notes: notes || null,
-      status: 'pending',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    // Insert appointment
-    const result = await db.collection('appointments').insertOne(appointment);
-
-    // Get the saved appointment
-    const savedAppointment = await db.collection('appointments').findOne(
-      { _id: result.insertedId },
-      {
-        projection: {
-          _id: 1,
-          patientId: 1,
-          doctorId: 1,
-          date: 1,
-          time: 1,
-          reason: 1,
-          notes: 1,
-          status: 1,
-          createdAt: 1,
-          updatedAt: 1
-        }
-      }
-    );
-
-    // Notify doctor about new appointment
-    const io = getIO();
-    if (io) {
-      io.to(`doctor_${doctorId}`).emit('new_appointment', {
-        appointment: savedAppointment,
-        message: 'New appointment request received'
-      });
-    }
-
-    return NextResponse.json({ 
-      success: true,
-      appointment: savedAppointment 
-    });
-
-  } catch (error) {
-    console.error('Error creating appointment:', error);
-    return NextResponse.json(
-      { error: 'Failed to create appointment', details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-// Update appointment (reschedule, accept, reject)
-export async function PATCH(request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { db } = await connectToDatabase();
-    
-    const { appointmentId, action, newDate, newTime, reason } = await request.json();
-    
-    const appointment = await db.collection('appointments').findOne(
-      { _id: new ObjectId(appointmentId) },
-      {
-        projection: {
-          _id: 1,
-          patientId: 1,
-          doctorId: 1,
-          date: 1,
-          time: 1,
-          reason: 1,
-          status: 1,
-          rescheduleHistory: 1
-        }
-      }
-    );
-    if (!appointment) {
-      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
-    }
-
-    // Check if user has permission to modify this appointment
-    if (session.user.role === 'doctor' && appointment.doctorId.toString() !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-    if (session.user.role === 'patient' && appointment.patientId.toString() !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
-    let update = {};
-    let notificationMessage = '';
-
-    switch (action) {
-      case 'accept':
-        update.status = 'accepted';
-        notificationMessage = 'Your appointment has been accepted';
-        break;
-      case 'reject':
-        update.status = 'rejected';
-        notificationMessage = 'Your appointment has been rejected';
-        break;
-      case 'reschedule':
-        if (!newDate || !newTime || !reason) {
-          return NextResponse.json({ error: 'Missing required fields for rescheduling' }, { status: 400 });
-        }
-        
-        // Add to reschedule history
-        const rescheduleEntry = {
-          oldDate: appointment.date,
-          oldTime: appointment.time,
-          newDate,
-          newTime,
-          reason,
-          changedBy: session.user.role
-        };
-        
-        update = {
-          date: newDate,
-          time: newTime,
-          rescheduleReason: reason,
-          status: 'rescheduled',
-          $push: { rescheduleHistory: rescheduleEntry }
-        };
-        
-        notificationMessage = `Appointment has been rescheduled to ${newDate} at ${newTime}`;
-        break;
-      default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-    }
-
-    const updatedAppointment = await db.collection('appointments').findOneAndUpdate(
-      { _id: new ObjectId(appointmentId) },
-      { $set: update },
-      {
-        projection: {
-          _id: 1,
-          patientId: 1,
-          doctorId: 1,
-          date: 1,
-          time: 1,
-          reason: 1,
-          status: 1,
-          rescheduleHistory: 1
-        },
-        returnDocument: 'after'
-      }
-    );
-
-    // Notify the other party
-    const io = getIO();
-    if (io) {
-      const targetUserId = session.user.role === 'doctor' 
-        ? appointment.patientId 
-        : appointment.doctorId;
-      
-      io.to(`user_${targetUserId}`).emit('appointment_update', {
-        appointment: updatedAppointment.value,
-        message: notificationMessage
-      });
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      appointment: updatedAppointment.value 
-    });
-  } catch (error) {
-    console.error('Error updating appointment:', error);
-    return NextResponse.json(
-      { error: 'Failed to update appointment' },
+      { message: error.message || 'Internal server error', error: error.stack },
       { status: 500 }
     );
   }

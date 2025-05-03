@@ -2,15 +2,25 @@ import { useState, useEffect } from 'react';
 import { Search, Calendar, Clock, Video } from 'lucide-react';
 import { format } from 'date-fns';
 import { useDoctors } from '@/hooks/useDoctors';
+import { useSession } from 'next-auth/react';
 
 export default function BookAppointments({ darkMode }) {
+  const { data: session } = useSession();
   const { doctors, loading, error, filters, updateFilters, specialties } = useDoctors();
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [reason, setReason] = useState('');
+  const [notes, setNotes] = useState('');
+  const [bookingError, setBookingError] = useState(null);
 
   const handleBookAppointment = async (doctor) => {
+    if (!session?.user) {
+      setBookingError('Please login to book an appointment');
+      return;
+    }
+
     try {
       const response = await fetch('/api/appointments', {
         method: 'POST',
@@ -19,23 +29,33 @@ export default function BookAppointments({ darkMode }) {
         },
         body: JSON.stringify({
           doctorId: doctor._id,
+          patientId: session.user.id,
           date: selectedDate,
-          time: selectedTime
+          time: selectedTime,
+          reason: reason,
+          notes: notes || null,
+          status: 'pending'
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to book appointment');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to book appointment');
       }
 
       const data = await response.json();
       setShowBookingModal(false);
       setSelectedDoctor(null);
+      setSelectedDate('');
+      setSelectedTime('');
+      setReason('');
+      setNotes('');
+      setBookingError(null);
       // Show success message
       alert('Appointment booked successfully!');
     } catch (error) {
       console.error('Error booking appointment:', error);
-      alert('Failed to book appointment. Please try again.');
+      setBookingError(error.message || 'Failed to book appointment. Please try again.');
     }
   };
 
@@ -164,8 +184,13 @@ export default function BookAppointments({ darkMode }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className={`p-6 rounded-lg shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} w-full max-w-md`}>
             <h3 className="text-lg font-medium mb-4">
-              Book Appointment with {selectedDoctor.name}
+              Book Appointment with Dr. {selectedDoctor.name}
             </h3>
+            {bookingError && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+                {bookingError}
+              </div>
+            )}
             <div className="space-y-4">
               <div>
                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
@@ -194,12 +219,41 @@ export default function BookAppointments({ darkMode }) {
                   onChange={(e) => setSelectedTime(e.target.value)}
                 />
               </div>
-              <div className="flex justify-end space-x-4">
+              <div>
+                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                  Reason for Visit
+                </label>
+                <textarea
+                  className={`w-full rounded-md border-gray-300 shadow-sm ${
+                    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={3}
+                  placeholder="Please describe the reason for your visit..."
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                  Additional Notes (Optional)
+                </label>
+                <textarea
+                  className={`w-full rounded-md border-gray-300 shadow-sm ${
+                    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Any additional information..."
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
                 <button
                   className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
                   onClick={() => {
                     setShowBookingModal(false);
                     setSelectedDoctor(null);
+                    setBookingError(null);
                   }}
                 >
                   Cancel

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Bell, Settings, LogOut, User, Menu, X, Search, Sun, Moon, Edit, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Bell, Settings, LogOut, User, Menu, X, Search, Sun, Moon, Edit, Trash2, Clock, Download } from 'lucide-react';
 import { Menu as HMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import Image from 'next/image';
@@ -566,7 +566,7 @@ export default function DoctorDashboard() {
 
             {/* Patient List */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Patient Records</h3>
+              <h3 className="text-lg font-medium mb-4">Patients</h3>
               <div className="space-y-4">
                 {patients
                   .filter(patient => {
@@ -629,85 +629,149 @@ export default function DoctorDashboard() {
             </div>
           </div>
         );
-      case 'medical-records':
+      case 'prescriptions':
         return (
           <div className="space-y-6">
-            {/* New Medical Record Form */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">New Medical Record</h3>
-              <form className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Patient</label>
-                  <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option>Select Patient</option>
-                  </select>
+            {/* New Prescription Form */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mb-6`}>
+              <h3 className={`text-lg font-medium mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>New Prescription</h3>
+              <form className="space-y-6">
+                <div className="grid grid-cols-1 gap-6">
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Patient</label>
+                    <select className={`w-full h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                      darkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                    }`}>
+                      <option>Select Patient</option>
+                      {patients.map(patient => (
+                        <option key={patient._id} value={patient._id}>{patient.fullName}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Diagnosis</label>
+                    <textarea 
+                      className={`w-full h-24 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                        darkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      placeholder="Enter diagnosis details"
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Treatment Plan</label>
+                    <textarea 
+                      className={`w-full h-24 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                        darkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      placeholder="Enter treatment plan"
+                    ></textarea>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Medication</label>
+                      <input 
+                        type="text" 
+                        className={`w-full h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                          darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                        }`}
+                        placeholder="Enter medication name" 
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Dosage</label>
+                      <input 
+                        type="text" 
+                        className={`w-full h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                          darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                        }`}
+                        placeholder="e.g., 500mg" 
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Frequency</label>
+                      <input 
+                        type="text" 
+                        className={`w-full h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                          darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                        }`}
+                        placeholder="e.g., Twice daily" 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Duration</label>
+                    <input 
+                      type="text" 
+                      className={`w-full h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                        darkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      placeholder="e.g., 7 days" 
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Additional Instructions</label>
+                    <textarea 
+                      className={`w-full h-24 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                        darkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      placeholder="Enter any additional instructions"
+                    ></textarea>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Consultation Date</label>
-                  <input type="date" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Diagnosis</label>
-                  <textarea className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" rows="3"></textarea>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Prescription</label>
-                  <textarea className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" rows="3"></textarea>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Treatment Plan</label>
-                  <textarea className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" rows="3"></textarea>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Additional Notes</label>
-                  <textarea className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" rows="3"></textarea>
-                </div>
-                <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                  Save Medical Record
+                <button type="submit" className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 text-lg font-medium">
+                  Issue Prescription
                 </button>
               </form>
             </div>
 
-            {/* Medical Records List */}
+            {/* Medical Records */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Medical Records</h3>
-                <div className="relative">
-                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'} h-5 w-5`} />
-                  <input
-                    type="text"
-                    placeholder="Search records..."
-                    className={`pl-10 pr-4 py-2 rounded-full border transition-all duration-300 ${
-                      darkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500' 
-                        : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-gray-300'
-                    } w-64 focus:outline-none`}
-                  />
-                </div>
-              </div>
-              <div className="space-y-4">
+              <h3 className="text-lg font-medium mb-6">Recent Medical Records</h3>
+              <div className="space-y-6">
                 {[1, 2, 3].map((record) => (
-                  <div key={record} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-500">JD</span>
+                  <div key={record} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">JD</span>
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">John Doe</p>
+                          <p className="text-xs text-gray-500">Consultation: 2024-03-15</p>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <p className="font-medium">John Doe</p>
-                        <p className="text-sm text-gray-500">Diagnosis: Common Cold</p>
-                        <p className="text-xs text-gray-400">Consultation Date: 2024-03-15</p>
+                      <div className="flex items-center space-x-3">
+                        <button className="p-2 text-blue-500 hover:text-blue-600">
+                          <Download size={20} />
+                        </button>
+                        <button className="p-2 text-yellow-500 hover:text-yellow-600">
+                          <Edit size={20} />
+                        </button>
+                        <button className="p-2 text-red-500 hover:text-red-600">
+                          <Trash2 size={20} />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button className="p-2 text-blue-500 hover:text-blue-600">
-                        <FileText size={20} />
-                      </button>
-                      <button className="p-2 text-yellow-500 hover:text-yellow-600">
-                        <Edit size={20} />
-                      </button>
-                      <button className="p-2 text-red-500 hover:text-red-600">
-                        <Trash2 size={20} />
-                      </button>
+                    <div className="mt-4 text-sm space-y-2">
+                      <p><span className="font-medium">Diagnosis:</span> Common Cold</p>
+                      <p><span className="font-medium">Treatment:</span> Prescribed Amoxicillin</p>
+                      <p><span className="font-medium">Follow-up:</span> 7 days</p>
                     </div>
                   </div>
                 ))}
@@ -715,29 +779,142 @@ export default function DoctorDashboard() {
             </div>
           </div>
         );
-      case 'messages':
+      case 'appointments':
         return (
           <div className="space-y-6">
-            {/* Chat Interface */}
+            {/* Filters */}
             <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Messages</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Date</label>
+                  <input 
+                    type="date" 
+                    className="w-full rounded-md border-gray-300 shadow-sm"
+                    value={appointmentFilters.date}
+                    onChange={(e) => setAppointmentFilters(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Patient</label>
+                  <input 
+                    type="text" 
+                    placeholder="Search patient..."
+                    className="w-full rounded-md border-gray-300 shadow-sm"
+                    value={appointmentFilters.patient}
+                    onChange={(e) => setAppointmentFilters(prev => ({ ...prev, patient: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+                  <select 
+                    className="w-full rounded-md border-gray-300 shadow-sm"
+                    value={appointmentFilters.status}
+                    onChange={(e) => setAppointmentFilters(prev => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Appointments */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className="text-lg font-medium mb-4">Upcoming Appointments</h3>
               <div className="space-y-4">
-                {[1, 2, 3].map((message) => (
-                  <div key={message} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-500">JD</span>
+                {upcomingAppointments
+                  .filter(appointment => {
+                    const matchesDate = !appointmentFilters.date || 
+                      new Date(appointment.scheduledFor).toDateString() === new Date(appointmentFilters.date).toDateString();
+                    const matchesPatient = !appointmentFilters.patient || 
+                      appointment.patientName.toLowerCase().includes(appointmentFilters.patient.toLowerCase());
+                    const matchesStatus = appointmentFilters.status === 'all' || 
+                      appointment.status === appointmentFilters.status;
+                    return matchesDate && matchesPatient && matchesStatus;
+                  })
+                  .map((appointment) => (
+                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">
+                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                          </span>
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">{appointment.patientName}</p>
+                          <p className="text-sm text-gray-500">{appointment.type}</p>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <p className="font-medium">John Doe</p>
-                        <p className="text-sm text-gray-500">Last message: 2 hours ago</p>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <p className="text-lg font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
+                          <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        </div>
+                        <button 
+                          className={`px-4 py-2 rounded ${
+                            new Date(appointment.scheduledFor).getTime() - Date.now() <= 600000
+                              ? 'bg-green-500 text-white hover:bg-green-600'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                          disabled={new Date(appointment.scheduledFor).getTime() - Date.now() > 600000}
+                          onClick={() => handleJoinVideoCall(appointment._id)}
+                        >
+                          Join Call
+                        </button>
+                        <button 
+                          className="p-2 text-blue-500 hover:text-blue-600"
+                          onClick={() => handleViewPatientDetails(appointment.patientId)}
+                        >
+                          <User size={20} />
+                        </button>
                       </div>
                     </div>
-                    <button className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
-                      Chat
-                    </button>
-                  </div>
-                ))}
+                  ))}
+              </div>
+            </div>
+
+            {/* Past Appointments */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className="text-lg font-medium mb-4">Past Appointments</h3>
+              <div className="space-y-4">
+                {pastAppointments
+                  .filter(appointment => {
+                    const matchesDate = !appointmentFilters.date || 
+                      new Date(appointment.scheduledFor).toDateString() === new Date(appointmentFilters.date).toDateString();
+                    const matchesPatient = !appointmentFilters.patient || 
+                      appointment.patientName.toLowerCase().includes(appointmentFilters.patient.toLowerCase());
+                    const matchesStatus = appointmentFilters.status === 'all' || 
+                      appointment.status === appointmentFilters.status;
+                    return matchesDate && matchesPatient && matchesStatus;
+                  })
+                  .map((appointment) => (
+                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">
+                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                          </span>
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">{appointment.patientName}</p>
+                          <p className="text-sm text-gray-500">{appointment.type}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className={`text-sm ${
+                          appointment.status === 'completed' ? 'text-green-500' :
+                          appointment.status === 'cancelled' ? 'text-red-500' :
+                          'text-yellow-500'
+                        }`}>
+                          {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
@@ -774,286 +951,501 @@ export default function DoctorDashboard() {
   }
 
   return (
-    <div className={`flex h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-green-50 to-gray-100 text-gray-900'} transition-all duration-300`}>
-      {/* Sidebar */}
-      <div className={`${collapsed ? 'w-20' : 'w-64'} ${darkMode ? 'bg-gray-800' : 'bg-white'} transition-all duration-300 shadow-lg fixed h-full z-50`}>
-        {/* Logo */}
-        <div className={`flex items-center p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} h-16`}>
-          <div className="text-green-700 mr-2">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="18" cy="18" r="18" fill="currentColor" fillOpacity="0.2" />
-              <path d="M11 18C11 14.134 14.134 11 18 11V25C14.134 25 11 21.866 11 18Z" fill="currentColor" />
-            </svg>
-          </div>
-          {!collapsed && <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-800">VirtualDoc</span>}
-        </div>
-
-        {/* Menu */}
-        <div className="p-4">
-          {!collapsed && <div className="text-sm font-medium text-gray-500 mb-4">MAIN MENU</div>}
-          
-          <div className="space-y-2">
-            {/* Dashboard */}
-            <div 
-              onClick={() => handleNavigation('dashboard')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                activeSection === 'dashboard' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <LayoutDashboard size={20} />
-              {!collapsed && <span className="ml-3 font-medium">Dashboard</span>}
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-green-50 to-gray-100 text-gray-900'} transition-all duration-300`}>
+      {/* Header */}
+      <header className={`fixed top-0 left-0 right-0 z-50 ${
+        darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+      } shadow-sm transition-all duration-300 h-16 border-b`}>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="text-green-700 mr-2">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="18" cy="18" r="18" fill="currentColor" fillOpacity="0.2" />
+                  <path d="M11 18C11 14.134 14.134 11 18 11V25C14.134 25 11 21.866 11 18Z" fill="currentColor" />
+                </svg>
+              </div>
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-800">VirtualDoc</span>
             </div>
             
-            {/* Appointments */}
-            <div 
-              onClick={() => handleNavigation('appointments')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                activeSection === 'appointments' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <Calendar size={20} />
-              {!collapsed && <span className="ml-3">Appointments</span>}
-            </div>
-            
-            {/* Patients */}
-            <div 
-              onClick={() => handleNavigation('patients')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                activeSection === 'patients' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <Users size={20} />
-              {!collapsed && <span className="ml-3">Patients</span>}
-            </div>
-            
-            {/* Prescriptions */}
-            <div 
-              onClick={() => handleNavigation('medical-records')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                activeSection === 'medical-records' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <FileText size={20} />
-              {!collapsed && <span className="ml-3">Medical Records</span>}
-            </div>
-            
-            {/* Messages */}
-            <div 
-              onClick={() => handleNavigation('messages')}
-              className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                activeSection === 'messages' 
-                  ? (darkMode ? 'bg-green-700 text-white' : 'bg-green-50 text-green-800') 
-                  : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-green-50 hover:text-green-800')
-              }`}
-            >
-              <MessageSquare size={20} />
-              {!collapsed && <span className="ml-3">Messages</span>}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className={`flex-1 ${collapsed ? 'ml-20' : 'ml-64'} transition-all duration-300`}>
-        {/* Header */}
-        <header className={`flex items-center justify-between px-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm transition-all duration-300 h-16 border-b sticky top-0 z-40`}>
-          <div className="flex items-center">
-            <button onClick={toggleSidebar} className={`p-2 rounded-full transition-all duration-300 ${
-              darkMode 
-                ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
-                : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
-            }`}>
-              {collapsed ? <Menu size={20} /> : <X size={20} />}
-            </button>
-            <h1 className="ml-4 text-2xl font-bold">
-              {activeSection === 'medical-records' ? 'Medical Records' : activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}
-            </h1>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {/* Search Bar */}
-            <div className="relative hidden md:block">
-              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'} h-5 w-5 transition-colors duration-300`} />
-              <input
-                type="text"
-                placeholder="Search..."
-                className={`pl-10 pr-4 py-2 rounded-full border transition-all duration-300 ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500' 
-                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-gray-300'
-                } w-64 focus:outline-none`}
-              />
-            </div>
-
-            {/* Dark Mode Toggle */}
-            <button 
-              onClick={toggleDarkMode} 
-              className={`p-2 rounded-full transition-all duration-300 ${
-                darkMode 
-                  ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
-                  : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {mounted && (darkMode ? <Sun size={20} /> : <Moon size={20} />)}
-            </button>
-
-            {/* Notifications */}
-            <div className="relative" ref={notificationsRef}>
+            <div className="flex items-center space-x-4">
+              {/* Dark Mode Toggle */}
               <button 
-                onClick={toggleNotifications}
-                className={`p-2 rounded-full relative transition-all duration-300 ${
+                onClick={toggleDarkMode} 
+                className={`p-2 rounded-full transition-all duration-300 ${
                   darkMode 
                     ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
                     : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <Bell size={20} />
-                {unreadNotifications > 0 && (
-                  <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-                    {unreadNotifications}
-                  </span>
-                )}
+                {mounted && (darkMode ? <Sun size={20} /> : <Moon size={20} />)}
               </button>
 
-              {/* Notifications Dropdown */}
-              {showNotifications && (
-                <div className={`absolute right-0 mt-2 w-80 ${
-                  darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                } rounded-lg shadow-lg py-1 z-50 border transition-colors duration-300`}>
-                  <div className={`flex justify-between items-center px-4 py-2 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <h3 className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Notifications</h3>
-                    {unreadNotifications > 0 && (
-                      <button 
-                        className={`text-sm ${darkMode ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-500'}`}
-                        onClick={() => {
-                          setNotifications(notifications.map(n => ({ ...n, read: true })));
-                        }}
-                      >
-                        Mark all as read
-                      </button>
+              {/* Profile Dropdown */}
+              <HMenu as="div" className="relative" ref={profileRef}>
+                <HMenu.Button className={`flex items-center space-x-3 p-2 focus:outline-none rounded-lg ${
+                  darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                }`}>
+                  <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
+                    {session?.user?.profilePicture ? (
+                      <Image 
+                        src={session.user.profilePicture} 
+                        alt={session.user.name} 
+                        width={32} 
+                        height={32} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5 text-white" />
                     )}
                   </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div 
-                        key={notification.id}
-                        className={`px-4 py-3 ${darkMode ? 'hover:bg-gray-700 border-gray-700' : 'hover:bg-gray-50 border-gray-100'} border-b last:border-0`}
-                        onClick={() => markNotificationAsRead(notification.id)}
-                      >
-                        <div className="flex items-start">
-                          <div className={`flex-shrink-0 ${darkMode ? 'bg-green-900' : 'bg-green-100'} p-2 rounded-full`}>
-                            <Bell className={`h-4 w-4 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
-                          </div>
-                          <div className="ml-3">
-                            <p className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{notification.title}</p>
-                            <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{notification.message}</p>
-                            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>{notification.time}</p>
-                          </div>
+                  <div className="text-left hidden md:block">
+                    <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                      {session?.user?.name ? `Dr. ${session.user.name}` : 'Loading...'}
+                    </p>
+                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {doctorProfile?.specialization ? doctorProfile.specialization : 'Loading...'}
+                    </p>
+                  </div>
+                </HMenu.Button>
+
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <HMenu.Items className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg focus:outline-none z-50 ${
+                    darkMode ? 'bg-gray-800' : 'bg-white'
+                  }`}>
+                    <div className="py-1">
+                      <HMenu.Item>
+                        {({ active }) => (
+                          <a
+                            href="/dashboard/doctor/settings"
+                            className={`${
+                              active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
+                            } block px-4 py-2 text-sm ${
+                              darkMode ? 'text-gray-200' : 'text-gray-700'
+                            }`}
+                          >
+                            <div className="flex items-center">
+                              <Settings className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                              Settings
+                            </div>
+                          </a>
+                        )}
+                      </HMenu.Item>
+                    </div>
+                    <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                      <HMenu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={() => {
+                              signOut({ callbackUrl: '/' });
+                            }}
+                            className={`${
+                              active ? (darkMode ? 'bg-gray-700' : 'bg-red-50') : ''
+                            } block w-full text-left px-4 py-2 text-sm text-red-600 rounded-b-lg`}
+                          >
+                            <div className="flex items-center">
+                              <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-red-500' : 'text-red-600'}`} />
+                              Sign out
+                            </div>
+                          </button>
+                        )}
+                      </HMenu.Item>
+                    </div>
+                  </HMenu.Items>
+                </Transition>
+              </HMenu>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="pt-20 px-4 sm:px-6 lg:px-8 pb-6">
+        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+          {/* Welcome Section */}
+          <section id="welcome" className="scroll-mt-20">
+            <div className={`p-4 sm:p-6 rounded-lg shadow-sm bg-gradient-to-r from-green-700 to-green-900 text-white`}>
+              <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">Welcome back, Dr. {session?.user?.name}</h1>
+                  <p className="text-lg text-green-100">
+                    Here's what's happening with your practice today
+                  </p>
+                </div>
+                <div className="hidden md:block">
+                  <div className="p-4 rounded-lg bg-white/10">
+                    <p className="text-sm text-green-100">Current Time</p>
+                    <p className="text-2xl font-semibold">{new Date().toLocaleTimeString()}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Statistics Section */}
+          <section id="statistics" className="scroll-mt-20">
+            <h2 className="text-2xl font-bold mb-4 sm:mb-6">Practice Overview</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="flex items-center">
+                  <div className="bg-blue-100 p-3 rounded-full">
+                    <Calendar size={24} className="text-blue-500" />
+                  </div>
+                  <div className="ml-4">
+                    <h2 className="text-2xl font-bold">{dashboardData.monthlyAppointments}</h2>
+                    <p className="text-sm text-gray-500">Monthly Appointments</p>
+                  </div>
+                </div>
+              </div>
+              <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="flex items-center">
+                  <div className="bg-green-100 p-3 rounded-full">
+                    <Users size={24} className="text-green-500" />
+                  </div>
+                  <div className="ml-4">
+                    <h2 className="text-2xl font-bold">{dashboardData.totalPatients}</h2>
+                    <p className="text-sm text-gray-500">Total Patients</p>
+                  </div>
+                </div>
+              </div>
+              <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="flex items-center">
+                  <div className="bg-yellow-100 p-3 rounded-full">
+                    <Clock size={24} className="text-yellow-500" />
+                  </div>
+                  <div className="ml-4">
+                    <h2 className="text-2xl font-bold">{dashboardData.pendingAppointments || 0}</h2>
+                    <p className="text-sm text-gray-500">Pending Appointments</p>
+                  </div>
+                </div>
+              </div>
+              <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="flex items-center">
+                  <div className="bg-purple-100 p-3 rounded-full">
+                    <FileText size={24} className="text-purple-500" />
+                  </div>
+                  <div className="ml-4">
+                    <h2 className="text-2xl font-bold">{dashboardData.pendingPrescriptions || 0}</h2>
+                    <p className="text-sm text-gray-500">Pending Prescriptions</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Appointments Section */}
+          <section id="appointments" className="scroll-mt-20">
+            <h2 className="text-2xl font-bold mb-4 sm:mb-6">Appointments</h2>
+            
+            {/* Pending Appointments */}
+            <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mb-4 sm:mb-6`}>
+              <h3 className="text-lg font-medium mb-4 sm:mb-4">Pending Confirmations</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {upcomingAppointments
+                  .filter(appointment => appointment.status === 'pending')
+                  .map((appointment) => (
+                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
+                      <div className="flex items-center mb-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">
+                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                          </span>
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">{appointment.patientName}</p>
+                          <p className="text-sm text-gray-500">{appointment.type}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      <div className="flex-1">
+                        <div className="flex items-center text-sm text-gray-500 mb-2">
+                          <Clock size={16} className="mr-2" />
+                          <span>{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Calendar size={16} className="mr-2" />
+                          <span>{new Date(appointment.scheduledFor).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2 mt-4">
+                        <button 
+                          className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                          onClick={() => handleConfirmAppointment(appointment._id)}
+                        >
+                          Confirm
+                        </button>
+                        <button 
+                          className="flex-1 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                          onClick={() => handleRejectAppointment(appointment._id)}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
 
-            {/* Profile Dropdown */}
-            <HMenu as="div" className="relative" ref={profileRef}>
-              <HMenu.Button className={`flex items-center space-x-3 p-2 focus:outline-none rounded-lg ${
-                darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-              }`}>
-                <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
-                  {session?.user?.profilePicture ? (
-                    <Image 
-                      src={session.user.profilePicture} 
-                      alt={session.user.name} 
-                      width={32} 
-                      height={32} 
-                      className="w-full h-full object-cover"
+            {/* Upcoming Appointments */}
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className="text-lg font-medium mb-4">Upcoming Appointments</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {upcomingAppointments
+                  .filter(appointment => {
+                    const appointmentDate = new Date(appointment.scheduledFor);
+                    const today = new Date();
+                    return appointmentDate > today && appointment.status === 'confirmed';
+                  })
+                  .map((appointment) => (
+                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
+                      <div className="flex items-center mb-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">
+                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                          </span>
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">{appointment.patientName}</p>
+                          <p className="text-sm text-gray-500">{appointment.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center text-sm text-gray-500 mb-2">
+                          <Clock size={16} className="mr-2" />
+                          <span>{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Calendar size={16} className="mr-2" />
+                          <span>{new Date(appointment.scheduledFor).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <button 
+                        className={`mt-4 w-full px-4 py-2 rounded ${
+                          new Date(appointment.scheduledFor).getTime() - Date.now() <= 600000
+                            ? 'bg-green-500 text-white hover:bg-green-600'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                        disabled={new Date(appointment.scheduledFor).getTime() - Date.now() > 600000}
+                        onClick={() => handleJoinVideoCall(appointment._id)}
+                      >
+                        Join Call
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Prescriptions Section */}
+          <section id="prescriptions" className="scroll-mt-20">
+            <h2 className="text-2xl font-bold mb-4 sm:mb-6">Prescriptions & Medical Records</h2>
+            
+            {/* New Prescription Form */}
+            <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mb-4 sm:mb-6`}>
+              <h3 className={`text-lg font-medium mb-4 sm:mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>New Prescription</h3>
+              <form className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Patient</label>
+                    <select className={`w-full h-10 sm:h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                      darkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                    }`}>
+                      <option>Select Patient</option>
+                      {patients.map(patient => (
+                        <option key={patient._id} value={patient._id}>{patient.fullName}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Diagnosis</label>
+                    <textarea 
+                      className={`w-full h-24 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                        darkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      placeholder="Enter diagnosis details"
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Treatment Plan</label>
+                    <textarea 
+                      className={`w-full h-24 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                        darkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      placeholder="Enter treatment plan"
+                    ></textarea>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Medication</label>
+                      <input 
+                        type="text" 
+                        className={`w-full h-10 sm:h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                          darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                        }`}
+                        placeholder="Enter medication name" 
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Dosage</label>
+                      <input 
+                        type="text" 
+                        className={`w-full h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                          darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                        }`}
+                        placeholder="e.g., 500mg" 
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Frequency</label>
+                      <input 
+                        type="text" 
+                        className={`w-full h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                          darkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                        }`}
+                        placeholder="e.g., Twice daily" 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Duration</label>
+                    <input 
+                      type="text" 
+                      className={`w-full h-12 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                        darkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      placeholder="e.g., 7 days" 
                     />
-                  ) : (
-                    <User className="h-5 w-5 text-white" />
-                  )}
-                </div>
-                <div className="text-left hidden md:block">
-                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                    {session?.user?.name ? `Dr. ${session.user.name}` : 'Loading...'}
-                  </p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {doctorProfile?.specialization ? doctorProfile.specialization : 'Loading...'}
-                  </p>
-                </div>
-              </HMenu.Button>
-
-              <Transition
-                as={Fragment}
-                enter="transition ease-out duration-100"
-                enterFrom="transform opacity-0 scale-95"
-                enterTo="transform opacity-100 scale-100"
-                leave="transition ease-in duration-75"
-                leaveFrom="transform opacity-100 scale-100"
-                leaveTo="transform opacity-0 scale-95"
-              >
-                <HMenu.Items className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg focus:outline-none ${
-                  darkMode ? 'bg-gray-800' : 'bg-white'
-                }`}>
-                  <div className="py-1">
-                    <HMenu.Item>
-                      {({ active }) => (
-                        <a
-                          href="/dashboard/doctor/settings"
-                          className={`${
-                            active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
-                          } block px-4 py-2 text-sm ${
-                            darkMode ? 'text-gray-200' : 'text-gray-700'
-                          }`}
-                        >
-                          <div className="flex items-center">
-                            <Settings className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                            Settings
-                          </div>
-                        </a>
-                      )}
-                    </HMenu.Item>
                   </div>
-                  <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <HMenu.Item>
-                      {({ active }) => (
-                        <button
-                          onClick={() => {
-                            signOut({ callbackUrl: '/' });
-                          }}
-                          className={`${
-                            active ? (darkMode ? 'bg-gray-700' : 'bg-red-50') : ''
-                          } block w-full text-left px-4 py-2 text-sm text-red-600 rounded-b-lg`}
-                        >
-                          <div className="flex items-center">
-                            <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-red-500' : 'text-red-600'}`} />
-                            Sign out
-                          </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'} text-left`}>Additional Instructions</label>
+                    <textarea 
+                      className={`w-full h-24 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 ${
+                        darkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      placeholder="Enter any additional instructions"
+                    ></textarea>
+                  </div>
+                </div>
+                <button type="submit" className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 text-lg font-medium">
+                  Issue Prescription
+                </button>
+              </form>
+            </div>
+
+            {/* Medical Records */}
+            <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className="text-lg font-medium mb-6">Recent Medical Records</h3>
+              <div className="space-y-6">
+                {[1, 2, 3].map((record) => (
+                  <div key={record} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">JD</span>
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">John Doe</p>
+                          <p className="text-xs text-gray-500">Consultation: 2024-03-15</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <button className="p-2 text-blue-500 hover:text-blue-600">
+                          <Download size={16} className="sm:w-5 sm:h-5" />
                         </button>
-                      )}
-                    </HMenu.Item>
+                        <button className="p-2 text-yellow-500 hover:text-yellow-600">
+                          <Edit size={16} className="sm:w-5 sm:h-5" />
+                        </button>
+                        <button className="p-2 text-red-500 hover:text-red-600">
+                          <Trash2 size={16} className="sm:w-5 sm:h-5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-4 text-sm space-y-2">
+                      <p><span className="font-medium">Diagnosis:</span> Common Cold</p>
+                      <p><span className="font-medium">Treatment:</span> Prescribed Amoxicillin</p>
+                      <p><span className="font-medium">Follow-up:</span> 7 days</p>
+                    </div>
                   </div>
-                </HMenu.Items>
-              </Transition>
-            </HMenu>
-          </div>
-        </header>
+                ))}
+              </div>
+            </div>
+          </section>
 
-        {/* Dynamic Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {renderContent()}
-        </main>
-      </div>
+          {/* Patients Section */}
+          <section id="patients" className="scroll-mt-20">
+            <h2 className="text-2xl font-bold mb-6">Patients</h2>
+            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className="space-y-4">
+                {patients.map((patient) => (
+                  <div key={patient._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                          {patient.profilePicture ? (
+                            <Image 
+                              src={patient.profilePicture} 
+                              alt={patient.fullName} 
+                              width={48} 
+                              height={48} 
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          ) : (
+                            <span className="text-gray-500">
+                              {patient.fullName?.split(' ').map(n => n[0]).join('') || 'P'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <p className="font-medium">{patient.fullName}</p>
+                          <p className="text-sm text-gray-500">Age: {patient.age}</p>
+                          <p className="text-xs text-gray-400">Last visit: {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                          onClick={() => handleViewPatientDetails(patient._id)}
+                        >
+                          View Records
+                        </button>
+                        <button 
+                          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                          onClick={() => handleScheduleAppointment(patient._id)}
+                        >
+                          Schedule
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
     </div>
   );
 }

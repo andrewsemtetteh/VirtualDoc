@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { io } from 'socket.io-client';
 
 export function useAppointments() {
   const [appointments, setAppointments] = useState([]);
@@ -11,10 +10,13 @@ export function useAppointments() {
     try {
       setLoading(true);
       const response = await axios.get('/api/appointments');
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
       setAppointments(response.data);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch appointments');
+      setError(err.response?.data?.error || 'Failed to fetch appointments');
       console.error('Error fetching appointments:', err);
     } finally {
       setLoading(false);
@@ -25,35 +27,50 @@ export function useAppointments() {
     try {
       setLoading(true);
       const response = await axios.post('/api/appointments', appointmentData);
-      setAppointments(prev => [...prev, response.data]);
-      return response.data;
+      if (!response.data?.appointment) {
+        throw new Error('Invalid response from server');
+      }
+      setAppointments(prev => {
+        const newAppointments = [...prev, response.data.appointment];
+        return newAppointments.sort((a, b) => 
+          new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`)
+        );
+      });
+      return response.data.appointment;
     } catch (err) {
-      setError('Failed to book appointment');
+      const errorMessage = err.response?.data?.error || 'Failed to book appointment';
+      setError(errorMessage);
       console.error('Error booking appointment:', err);
-      throw err;
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001');
-
-    socket.on('appointmentUpdate', (updatedAppointment) => {
+  const updateAppointment = useCallback(async (appointmentId, updateData) => {
+    try {
+      setLoading(true);
+      const response = await axios.patch(`/api/appointments`, {
+        appointmentId,
+        ...updateData
+      });
+      if (!response.data?.appointment) {
+        throw new Error('Invalid response from server');
+      }
       setAppointments(prev => 
         prev.map(apt => 
-          apt._id === updatedAppointment._id ? updatedAppointment : apt
+          apt._id === appointmentId ? response.data.appointment : apt
         )
       );
-    });
-
-    socket.on('appointmentCreated', (newAppointment) => {
-      setAppointments(prev => [...prev, newAppointment]);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
+      return response.data.appointment;
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || 'Failed to update appointment';
+      setError(errorMessage);
+      console.error('Error updating appointment:', err);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -65,6 +82,7 @@ export function useAppointments() {
     loading,
     error,
     bookAppointment,
+    updateAppointment,
     refetch: fetchAppointments
   };
 } 

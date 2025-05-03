@@ -2174,37 +2174,19 @@ export default function AdminDashboard() {
                   darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
                 }`}>
                   <div className="py-1">
-
                     <HMenu.Item>
                       {({ active }) => (
-                        <a
-                          href="/dashboard/admin/settings"
+                        <button
+                          onClick={() => signOut()}
                           className={`${
                             active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
-                          } block px-4 py-2 text-sm ${
+                          } block w-full text-left px-4 py-2 text-sm ${
                             darkMode ? 'text-gray-200' : 'text-gray-700'
                           }`}
                         >
                           <div className="flex items-center">
-                            <Settings className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                            Settings
-                          </div>
-                        </a>
-                      )}
-                    </HMenu.Item>
-                  </div>
-                  <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <HMenu.Item>
-                      {({ active }) => (
-                        <button
-                          onClick={handleLogout}
-                          className={`w-full text-left ${
-                            active ? (darkMode ? 'bg-gray-700' : 'bg-red-50') : ''
-                          } block px-4 py-2 text-sm text-red-600 rounded-b-lg`}
-                        >
-                          <div className="flex items-center">
-                            <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-red-500' : 'text-red-600'}`} />
-                            Sign out
+                            <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                            Sign Out
                           </div>
                         </button>
                       )}

@@ -11,7 +11,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const id = params.id;
     if (!id) {
       return NextResponse.json({ error: 'Doctor ID is required' }, { status: 400 });
     }
