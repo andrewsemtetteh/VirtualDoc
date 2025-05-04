@@ -158,6 +158,23 @@ export default function PatientDashboard() {
     }
   };
 
+  const fetchPrescriptions = async () => {
+    try {
+      const response = await fetch('/api/prescriptions/patient');
+      if (!response.ok) {
+        throw new Error('Failed to fetch prescriptions');
+      }
+      const data = await response.json();
+      setDashboardData(prev => ({
+        ...prev,
+        prescriptions: data
+      }));
+    } catch (error) {
+      console.error('Error fetching prescriptions:', error);
+      toast.error('Failed to fetch prescriptions');
+    }
+  };
+
   const handleDownloadPrescription = async (prescription) => {
     try {
       // Create text content for the prescription
@@ -299,7 +316,7 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
       // Only fetch data if we have a valid session
       if (session.user._id || session.user.id) {
         fetchAppointments();
-        fetchDoctors();
+        fetchPrescriptions();
         fetchPatientProfile();
         fetchDashboardData();
       } else {
@@ -380,7 +397,7 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-green-50 to-gray-100 text-gray-900'} transition-all duration-300`}>
       {/* Fixed Header */}
       <header className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm transition-all duration-300 h-16 border-b`}>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="text-green-700 mr-2">
@@ -473,9 +490,9 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-16">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24">
         {/* Welcome Section */}
-        <section id="welcome" className="p-4 md:p-8">
+        <section id="welcome" className="mb-8">
           <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gradient-to-r from-green-900 to-green-800' : 'bg-gradient-to-r from-green-900 to-green-800'} text-white`}>
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex-1">
@@ -518,7 +535,7 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
         </section>
 
         {/* Patient Stats Section */}
-        <section id="patient-stats" className="p-6 md:p-8">
+        <section id="patient-stats" className="mb-8">
           <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
             <h2 className="text-xl font-bold mb-6">Your Statistics</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -583,7 +600,7 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
         </section>
 
         {/* Find Doctor Section */}
-        <section id="find-doctor" className="p-6 md:p-8">
+        <section id="find-doctor" className="mb-8">
           <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
             <h2 className="text-xl font-bold mb-6">Find a Doctor</h2>
             {loading ? (
@@ -613,7 +630,7 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
         </section>
 
         {/* Appointments Section */}
-        <section id="appointments" className="p-6 md:p-8">
+        <section id="appointments" className="mb-8">
           <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
             <h2 className="text-xl font-bold mb-6">Appointments</h2>
             
@@ -739,7 +756,7 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
         </section>
 
         {/* Prescriptions Section */}
-        <section id="prescriptions" className="p-6 md:p-8">
+        <section id="prescriptions" className="mb-8">
           <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
               <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Prescriptions</h2>
@@ -758,13 +775,24 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
               {dashboardData.prescriptions.length > 0 ? (
                 dashboardData.prescriptions.map((prescription) => (
                   <div key={prescription._id} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'} transition-colors duration-200`}>
-                    <div className="flex items-start justify-between mb-4">
+                    {/* Doctor Information Header */}
+                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 rounded-full ${darkMode ? 'bg-gray-600' : 'bg-gray-200'} flex items-center justify-center`}>
-                          <span className={`${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                            {prescription.doctor?.fullName?.split(' ').map(n => n[0]).join('') || 'D'}
-                          </span>
-                        </div>
+                        {prescription.doctor?.profilePicture ? (
+                          <Image
+                            src={prescription.doctor.profilePicture}
+                            alt={prescription.doctor.fullName}
+                            width={40}
+                            height={40}
+                            className="rounded-full"
+                          />
+                        ) : (
+                          <div className={`w-10 h-10 rounded-full ${darkMode ? 'bg-gray-600' : 'bg-gray-200'} flex items-center justify-center`}>
+                            <span className={`${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+                              {prescription.doctor?.fullName?.split(' ').map(n => n[0]).join('') || 'D'}
+                            </span>
+                          </div>
+                        )}
                         <div>
                           <h3 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                             Dr. {prescription.doctor?.fullName || 'Unknown Doctor'}
@@ -772,8 +800,8 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
                           <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             {prescription.doctor?.specialization || 'General Practitioner'}
                           </p>
-                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {formatDate(prescription.createdAt)}
+                          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {formatDate(prescription.appointment?.date)}
                           </p>
                         </div>
                       </div>

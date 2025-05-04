@@ -461,160 +461,6 @@ export default function DoctorDashboard() {
                   ))}
               </div>
             </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center">
-                  <div className="bg-blue-100 p-3 rounded-full">
-                    <Calendar size={24} className="text-blue-500" />
-                  </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">{dashboardData.monthlyAppointments}</h2>
-                    <p className="text-sm text-gray-500">This Month's Appointments</p>
-                  </div>
-                </div>
-              </div>
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center">
-                  <div className="bg-green-100 p-3 rounded-full">
-                    <Users size={24} className="text-green-500" />
-                  </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">{dashboardData.totalPatients}</h2>
-                    <p className="text-sm text-gray-500">Total Patients</p>
-                  </div>
-                </div>
-              </div>
-              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center">
-                  <div className="bg-purple-100 p-3 rounded-full">
-                    <MessageSquare size={24} className="text-purple-500" />
-                  </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">{dashboardData.unreadMessages}</h2>
-                    <p className="text-sm text-gray-500">Unread Messages</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Upcoming Appointments (Next 7 Days) */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Upcoming Appointments (Next 7 Days)</h3>
-              <div className="space-y-4">
-                {upcomingAppointments
-                  .filter(appointment => {
-                    const appointmentDate = new Date(appointment.scheduledFor);
-                    const today = new Date();
-                    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-                    return appointmentDate > today && appointmentDate <= nextWeek;
-                  })
-                  .map((appointment) => (
-                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-between`}>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500">
-                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <p className="font-medium">{appointment.patientName}</p>
-                          <p className="text-sm text-gray-500">{appointment.type}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-medium">{new Date(appointment.scheduledFor).toLocaleDateString()}</p>
-                        <p className="text-sm text-gray-500">{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-
-            {/* Notifications Feed */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Notifications</h3>
-              <div className="space-y-4">
-                {notifications.map((notification) => (
-                  <div 
-                    key={notification.id} 
-                    className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} ${
-                      !notification.read ? (darkMode ? 'border-l-4 border-blue-500' : 'border-l-4 border-blue-400') : ''
-                    }`}
-                    onClick={() => markNotificationAsRead(notification.id)}
-                  >
-                    <div className="flex items-start">
-                      <div className={`flex-shrink-0 ${darkMode ? 'bg-blue-900' : 'bg-blue-100'} p-2 rounded-full`}>
-                        <Bell className={`h-4 w-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                      </div>
-                      <div className="ml-3">
-                        <p className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{notification.title}</p>
-                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{notification.message}</p>
-                        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>{notification.time}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Recent Medical Records */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Recent Medical Records</h3>
-              <div className="space-y-4">
-                {completedAppointments.map((appointment) => (
-                  <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500">
-                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <p className="font-medium">{appointment.patientName}</p>
-                          <p className="text-sm text-gray-500">{new Date(appointment.completedAt).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <button 
-                          className={`p-2 ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-500 hover:text-blue-600'}`}
-                          onClick={() => handleDownloadRecord(appointment._id)}
-                        >
-                          <Download size={20} />
-                        </button>
-                        <button 
-                          className={`p-2 ${darkMode ? 'text-yellow-400 hover:text-yellow-300' : 'text-yellow-500 hover:text-yellow-600'}`}
-                          onClick={() => handleEditRecord(appointment._id)}
-                        >
-                          <Edit size={20} />
-                        </button>
-                        <button 
-                          className={`p-2 ${darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-600'}`}
-                          onClick={() => handleDeleteRecord(appointment._id)}
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    </div>
-                    {appointment.prescription && (
-                      <div className="mt-4 text-sm space-y-2">
-                        <p><span className="font-medium">Diagnosis:</span> {appointment.prescription.diagnosis}</p>
-                        <p><span className="font-medium">Treatment:</span> {appointment.prescription.treatmentPlan}</p>
-                        <p><span className="font-medium">Medication:</span> {appointment.prescription.medication}</p>
-                        <p><span className="font-medium">Dosage:</span> {appointment.prescription.dosage}</p>
-                        <p><span className="font-medium">Frequency:</span> {appointment.prescription.frequency}</p>
-                        <p><span className="font-medium">Duration:</span> {appointment.prescription.duration}</p>
-                        {appointment.prescription.additionalInstructions && (
-                          <p><span className="font-medium">Additional Instructions:</span> {appointment.prescription.additionalInstructions}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
             
             {/* Prescriptions Section */}
             <PrescriptionsSection darkMode={darkMode} />
@@ -1263,263 +1109,290 @@ export default function DoctorDashboard() {
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-green-50 to-gray-100 text-gray-900'} transition-all duration-300`}>
       {/* Header */}
-      <header className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between ${
-        darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-      } shadow-sm transition-all duration-300 h-16 border-b`}>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="text-green-700 mr-2">
-                <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="18" cy="18" r="18" fill="currentColor" fillOpacity="0.2" />
-                  <path d="M11 18C11 14.134 14.134 11 18 11V25C14.134 25 11 21.866 11 18Z" fill="currentColor" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-800">VirtualDoc</span>
+      <div className={`w-full ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm border-b sticky top-0 z-50`}>
+        <header className="flex items-center justify-between max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 h-16">
+          <div className="flex items-center space-x-4">
+            <div className="text-green-700">
+              <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="18" cy="18" r="18" fill="currentColor" fillOpacity="0.2" />
+                <path d="M11 18C11 14.134 14.134 11 18 11V25C14.134 25 11 21.866 11 18Z" fill="currentColor" />
+              </svg>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              {/* Dark Mode Toggle */}
-              <button 
-                onClick={toggleDarkMode} 
-                className={`p-2 rounded-full transition-all duration-300 ${
-                  darkMode 
-                    ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
-                    : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {mounted && (darkMode ? <Sun size={20} /> : <Moon size={20} />)}
-              </button>
-
-              {/* Profile Dropdown */}
-              <HMenu as="div" className="relative" ref={profileRef}>
-                <HMenu.Button className={`flex items-center space-x-3 p-2 focus:outline-none rounded-lg ${
-                  darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                }`}>
-                  <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
-                    {session?.user?.profilePicture ? (
-                      <Image 
-                        src={session.user.profilePicture} 
-                        alt={session.user.name} 
-                        width={32} 
-                        height={32} 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-5 w-5 text-white" />
-                    )}
-                  </div>
-                  <div className="text-left hidden md:block">
-                    <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                      {session?.user?.name ? `Dr. ${session.user.name}` : 'Loading...'}
-                    </p>
-                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {doctorProfile?.specialization ? doctorProfile.specialization : 'Loading...'}
-                    </p>
-                  </div>
-                </HMenu.Button>
-
-                <Transition
-                  as={Fragment}
-                  enter="transition ease-out duration-100"
-                  enterFrom="transform opacity-0 scale-95"
-                  enterTo="transform opacity-100 scale-100"
-                  leave="transition ease-in duration-75"
-                  leaveFrom="transform opacity-100 scale-100"
-                  leaveTo="transform opacity-0 scale-95"
-                >
-                  <HMenu.Items className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg focus:outline-none z-50 ${
-                    darkMode ? 'bg-gray-800' : 'bg-white'
-                  }`}>
-                    <div className="py-1">
-                      <HMenu.Item>
-                        {({ active }) => (
-                          <a
-                            href="/dashboard/doctor/settings"
-                            className={`${
-                              active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
-                            } block px-4 py-2 text-sm ${
-                              darkMode ? 'text-gray-200' : 'text-gray-700'
-                            }`}
-                          >
-                            <div className="flex items-center">
-                              <Settings className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                              Settings
-                            </div>
-                          </a>
-                        )}
-                      </HMenu.Item>
-                    </div>
-                    <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                      <HMenu.Item>
-                        {({ active }) => (
-                          <button
-                            onClick={() => {
-                              signOut({ callbackUrl: '/' });
-                            }}
-                            className={`${
-                              active ? (darkMode ? 'bg-gray-700' : 'bg-red-50') : ''
-                            } block w-full text-left px-4 py-2 text-sm text-red-600 rounded-b-lg`}
-                          >
-                            <div className="flex items-center">
-                              <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-red-500' : 'text-red-600'}`} />
-                              Sign out
-                            </div>
-                          </button>
-                        )}
-                      </HMenu.Item>
-                    </div>
-                  </HMenu.Items>
-                </Transition>
-              </HMenu>
-            </div>
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-800">VirtualDoc</span>
           </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="pt-20 px-4 sm:px-6 lg:px-8 pb-6">
-        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
-          {/* Welcome Section */}
-          <section id="welcome" className="scroll-mt-20">
-            <div className={`p-4 sm:p-6 rounded-lg shadow-sm bg-gradient-to-r from-green-700 to-green-900 text-white`}>
-              <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">Welcome back, Dr. {session?.user?.name}</h1>
-                  <p className="text-lg text-green-100">
-                    Here's what's happening with your practice today
+            
+          <div className="flex items-center space-x-4">
+            {/* Dark Mode Toggle */}
+            <button 
+              onClick={toggleDarkMode} 
+              className={`p-2 rounded-full transition-all duration-300 ${
+                darkMode 
+                  ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
+                  : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {mounted && (darkMode ? <Sun size={20} /> : <Moon size={20} />)}
+            </button>
+              
+            <HMenu as="div" className="relative" ref={profileRef}>
+              <HMenu.Button className={`flex items-center space-x-3 p-2 focus:outline-none rounded-lg ${
+                darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+              }`}>
+                <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
+                  {session?.user?.profilePicture ? (
+                    <Image 
+                      src={session.user.profilePicture} 
+                      alt={session.user.name} 
+                      width={32} 
+                      height={32} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-5 w-5 text-white" />
+                  )}
+                </div>
+                <div className="text-left hidden md:block">
+                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                    {session?.user?.name ? `Dr. ${session.user.name}` : 'Loading...'}
+                  </p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {doctorProfile?.specialization ? doctorProfile.specialization : 'Loading...'}
                   </p>
                 </div>
-                <div className="hidden md:block">
-                  <div className="p-4 rounded-lg bg-white/10">
-                    <p className="text-sm text-green-100">Current Time</p>
-                    <p className="text-2xl font-semibold">{new Date().toLocaleTimeString()}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+              </HMenu.Button>
 
-          {/* Statistics Section */}
-          <section id="statistics" className="scroll-mt-20">
-            <h2 className="text-2xl font-bold mb-4 sm:mb-6">Practice Overview</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center">
-                  <div className="bg-blue-100 p-3 rounded-full">
-                    <Calendar size={24} className="text-blue-500" />
-                  </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">{dashboardData.monthlyAppointments}</h2>
-                    <p className="text-sm text-gray-500">Monthly Appointments</p>
-                  </div>
-                </div>
-              </div>
-              <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center">
-                  <div className="bg-green-100 p-3 rounded-full">
-                    <Users size={24} className="text-green-500" />
-                  </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">{dashboardData.totalPatients}</h2>
-                    <p className="text-sm text-gray-500">Total Patients</p>
-                  </div>
-                </div>
-              </div>
-              <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center">
-                  <div className="bg-yellow-100 p-3 rounded-full">
-                    <Clock size={24} className="text-yellow-500" />
-                  </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">{dashboardData.pendingAppointments || 0}</h2>
-                    <p className="text-sm text-gray-500">Pending Appointments</p>
-                  </div>
-                </div>
-              </div>
-              <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center">
-                  <div className="bg-purple-100 p-3 rounded-full">
-                    <FileText size={24} className="text-purple-500" />
-                  </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold">{dashboardData.pendingPrescriptions || 0}</h2>
-                    <p className="text-sm text-gray-500">Pending Prescriptions</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Appointments Section */}
-          <section id="appointments" className="scroll-mt-20">
-            <h2 className="text-2xl font-bold mb-4 sm:mb-6">Appointments</h2>
-            
-            {/* Pending Appointments */}
-            <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mb-4 sm:mb-6`}>
-              <h3 className="text-lg font-medium mb-4 sm:mb-4">Pending Confirmations</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {upcomingAppointments
-                  .filter(appointment => appointment.status === 'pending')
-                  .map((appointment) => (
-                    <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
-                      <div className="flex items-center mb-4">
-                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500">
-                            {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <p className="font-medium">{appointment.patientName}</p>
-                          <p className="text-sm text-gray-500">{appointment.type}</p>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="mb-2">
-                          <p className="text-sm font-medium">Consultation Reason:</p>
-                          <p className="text-sm text-gray-500">{appointment.reason}</p>
-                        </div>
-                        {appointment.notes && (
-                          <div className="mb-2">
-                            <p className="text-sm font-medium">Notes:</p>
-                            <p className="text-sm text-gray-500">{appointment.notes}</p>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <HMenu.Items className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg focus:outline-none z-50 ${
+                  darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                }`}>
+                  <div className="py-1">
+                    <HMenu.Item>
+                      {({ active }) => (
+                        <a
+                          href="/dashboard/doctor/settings"
+                          className={`${
+                            active ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''
+                          } block px-4 py-2 text-sm ${
+                            darkMode ? 'text-gray-200' : 'text-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center">
+                            <Settings className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                            Settings
                           </div>
-                        )}
-                        <div className="flex items-center text-sm text-gray-500 mb-2">
-                          <Clock size={16} className="mr-2" />
-                          <span>{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Calendar size={16} className="mr-2" />
-                          <span>{new Date(appointment.scheduledFor).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2 mt-4">
-                        <button 
-                          className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                          onClick={() => handleConfirmAppointment(appointment._id)}
+                        </a>
+                      )}
+                    </HMenu.Item>
+                  </div>
+                  <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <HMenu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => {
+                            signOut({ callbackUrl: '/' });
+                          }}
+                          className={`${
+                            active ? (darkMode ? 'bg-gray-700' : 'bg-red-50') : ''
+                          } block w-full text-left px-4 py-2 text-sm text-red-600 rounded-b-lg`}
                         >
-                          Confirm
+                          <div className="flex items-center">
+                            <LogOut className={`h-4 w-4 mr-2 ${darkMode ? 'text-red-500' : 'text-red-600'}`} />
+                            Sign out
+                          </div>
                         </button>
-                        <button 
-                          className="flex-1 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                          onClick={() => handleRejectAppointment(appointment._id)}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
+                      )}
+                    </HMenu.Item>
+                  </div>
+                </HMenu.Items>
+              </Transition>
+            </HMenu>
+          </div>
+        </header>
+      </div>
 
-            {/* Upcoming Appointments */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <h3 className="text-lg font-medium mb-4">Upcoming Appointments</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {upcomingAppointments
-                  .filter(appointment => appointment.status === 'accepted')
-                  .map((appointment) => (
+      {/* Main Content */}
+      <main className="pt-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+            {/* Welcome Section */}
+            <section id="welcome" className="scroll-mt-20">
+              <div className={`p-4 sm:p-6 rounded-lg shadow-sm bg-gradient-to-r from-green-700 to-green-900 text-white`}>
+                <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+                  <div>
+                    <h1 className="text-3xl font-bold mb-2">Welcome back, Dr. {session?.user?.name}</h1>
+                    <p className="text-lg text-green-100">
+                      Here's what's happening with your practice today
+                    </p>
+                  </div>
+                  <div className="hidden md:block">
+                    <div className="p-4 rounded-lg bg-white/10">
+                      <p className="text-sm text-green-100">Current Time</p>
+                      <p className="text-2xl font-semibold">{new Date().toLocaleTimeString()}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Appointments Section */}
+            <section id="appointments" className="scroll-mt-20">
+              <h2 className="text-2xl font-bold mb-4 sm:mb-6">Appointments</h2>
+              
+              {/* Pending Appointments */}
+              <div className={`p-4 sm:p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mb-4 sm:mb-6`}>
+                <h3 className="text-lg font-medium mb-4 sm:mb-4">Pending Confirmations</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {upcomingAppointments
+                    .filter(appointment => appointment.status === 'pending')
+                    .map((appointment) => (
+                      <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
+                        <div className="flex items-center mb-4">
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-gray-500">
+                              {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                            </span>
+                          </div>
+                          <div className="ml-4">
+                            <p className="font-medium">{appointment.patientName}</p>
+                            <p className="text-sm text-gray-500">{appointment.type}</p>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="mb-2">
+                            <p className="text-sm font-medium">Consultation Reason:</p>
+                            <p className="text-sm text-gray-500">{appointment.reason}</p>
+                          </div>
+                          {appointment.notes && (
+                            <div className="mb-2">
+                              <p className="text-sm font-medium">Notes:</p>
+                              <p className="text-sm text-gray-500">{appointment.notes}</p>
+                            </div>
+                          )}
+                          <div className="flex items-center text-sm text-gray-500 mb-2">
+                            <Clock size={16} className="mr-2" />
+                            <span>{new Date(appointment.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <div className="flex items-center text-sm text-gray-500">
+                            <Calendar size={16} className="mr-2" />
+                            <span>{new Date(appointment.scheduledFor).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2 mt-4">
+                          <button 
+                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                            onClick={() => handleConfirmAppointment(appointment._id)}
+                          >
+                            Confirm
+                          </button>
+                          <button 
+                            className="flex-1 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                            onClick={() => handleRejectAppointment(appointment._id)}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Upcoming Appointments */}
+              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <h3 className="text-lg font-medium mb-4">Upcoming Appointments</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {upcomingAppointments
+                    .filter(appointment => appointment.status === 'accepted')
+                    .map((appointment) => (
+                      <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
+                        <div className="flex items-center mb-4">
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-gray-500">
+                              {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
+                            </span>
+                          </div>
+                          <div className="ml-4">
+                            <p className="font-medium">{appointment.patientName}</p>
+                            <p className="text-sm text-gray-500">{appointment.type}</p>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="mb-2">
+                            <span className="text-sm font-medium">Consultation Reason: </span>
+                            <span className="text-sm text-gray-500">{appointment.reason}</span>
+                          </div>
+                          {appointment.notes && (
+                            <div className="mb-2">
+                              <span className="text-sm font-medium">Additional Notes: </span>
+                              <span className="text-sm text-gray-500">{appointment.notes}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center text-sm text-gray-500 mb-2">
+                            <Clock size={16} className="mr-2" />
+                            <span>Time: {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleTimeString('en-US', { 
+                              hour: '2-digit', 
+                              minute: '2-digit',
+                              hour12: true 
+                            }) : 'Not set'}</span>
+                          </div>
+                          <div className="flex items-center text-sm text-gray-500">
+                            <Calendar size={16} className="mr-2" />
+                            <span>Date: {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleDateString('en-US', { 
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            }) : 'Not set'}</span>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2 mt-4">
+                          {appointment.meetingLink ? (
+                            <a
+                              href={appointment.meetingLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
+                            >
+                              <Video className="h-4 w-4 mr-2" />
+                              Join Meeting
+                            </a>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setSelectedAppointment(appointment);
+                                setShowMeetingLinkModal(true);
+                              }}
+                              className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
+                            >
+                              <Video className="h-4 w-4 mr-2" />
+                              Add Meeting Link
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleMarkAsDone(appointment._id)}
+                            className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center justify-center"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Completed Appointments */}
+              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mt-6`}>
+                <h3 className="text-lg font-medium mb-4">Completed Appointments</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {completedAppointments.map((appointment) => (
                     <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
                       <div className="flex items-center mb-4">
                         <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
@@ -1537,160 +1410,79 @@ export default function DoctorDashboard() {
                           <span className="text-sm font-medium">Consultation Reason: </span>
                           <span className="text-sm text-gray-500">{appointment.reason}</span>
                         </div>
-                        {appointment.notes && (
-                          <div className="mb-2">
-                            <span className="text-sm font-medium">Additional Notes: </span>
-                            <span className="text-sm text-gray-500">{appointment.notes}</span>
-                          </div>
-                        )}
                         <div className="flex items-center text-sm text-gray-500 mb-2">
                           <Clock size={16} className="mr-2" />
-                          <span>Time: {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleTimeString('en-US', { 
-                            hour: '2-digit', 
-                            minute: '2-digit',
-                            hour12: true 
-                          }) : 'Not set'}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Calendar size={16} className="mr-2" />
-                          <span>Date: {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleDateString('en-US', { 
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          }) : 'Not set'}</span>
+                          <span>Completed: {new Date(appointment.completedAt).toLocaleString()}</span>
                         </div>
                       </div>
                       <div className="flex space-x-2 mt-4">
-                        {appointment.meetingLink ? (
-                          <a
-                            href={appointment.meetingLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
-                          >
-                            <Video className="h-4 w-4 mr-2" />
-                            Join Meeting
-                          </a>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setSelectedAppointment(appointment);
-                              setShowMeetingLinkModal(true);
-                            }}
-                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
-                          >
-                            <Video className="h-4 w-4 mr-2" />
-                            Add Meeting Link
-                          </button>
-                        )}
                         <button
-                          onClick={() => handleMarkAsDone(appointment._id)}
-                          className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center justify-center"
+                          onClick={() => handlePrescribe(appointment)}
+                          className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
                         >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Done
+                          <FileText className="h-4 w-4 mr-2" />
+                          Prescribe
                         </button>
                       </div>
                     </div>
                   ))}
+                </div>
               </div>
-            </div>
+            </section>
 
-            {/* Completed Appointments */}
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} mt-6`}>
-              <h3 className="text-lg font-medium mb-4">Completed Appointments</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {completedAppointments.map((appointment) => (
-                  <div key={appointment._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} flex flex-col`}>
-                    <div className="flex items-center mb-4">
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-500">
-                          {appointment.patientName?.split(' ').map(n => n[0]).join('') || 'P'}
-                        </span>
-                      </div>
-                      <div className="ml-4">
-                        <p className="font-medium">{appointment.patientName}</p>
-                        <p className="text-sm text-gray-500">{appointment.type}</p>
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="mb-2">
-                        <span className="text-sm font-medium">Consultation Reason: </span>
-                        <span className="text-sm text-gray-500">{appointment.reason}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500 mb-2">
-                        <Clock size={16} className="mr-2" />
-                        <span>Completed: {new Date(appointment.completedAt).toLocaleString()}</span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2 mt-4">
-                      <button
-                        onClick={() => handlePrescribe(appointment)}
-                        className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Prescribe
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
+            {/* Prescriptions Section */}
+            <PrescriptionsSection darkMode={darkMode} />
 
-          {/* Prescriptions Section */}
-          <PrescriptionsSection darkMode={darkMode} />
-
-          {/* Patients Section */}
-          <section id="patients" className="scroll-mt-20">
-            <h2 className="text-2xl font-bold mb-6">Patients</h2>
-            <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <div className="space-y-4">
-                {patientsWithCompletedAppointments.map((patient, index) => (
-                  <div key={patient._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                          {patient.profilePicture ? (
-                            <Image 
-                              src={patient.profilePicture} 
-                              alt={patient.fullName} 
-                              width={48} 
-                              height={48} 
-                              className="w-full h-full object-cover rounded-full"
-                            />
-                          ) : (
-                            <span className="text-gray-500">
-                              {patient.fullName?.split(' ').map(n => n[0]).join('') || 'P'}
-                            </span>
-                          )}
+            {/* Patients Section */}
+            <section id="patients" className="scroll-mt-20">
+              <h2 className="text-2xl font-bold mb-6">Patients</h2>
+              <div className={`p-6 rounded-lg shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="space-y-4">
+                  {patientsWithCompletedAppointments.map((patient, index) => (
+                    <div key={patient._id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            {patient.profilePicture ? (
+                              <Image 
+                                src={patient.profilePicture} 
+                                alt={patient.fullName} 
+                                width={48} 
+                                height={48} 
+                                className="w-full h-full object-cover rounded-full"
+                              />
+                            ) : (
+                              <span className="text-gray-500">
+                                {patient.fullName?.split(' ').map(n => n[0]).join('') || 'P'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="ml-4">
+                            <p className="font-medium">{index + 1}. {patient.fullName}</p>
+                            <p className="text-sm text-gray-500">Last visit: {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'N/A'}</p>
+                          </div>
                         </div>
-                        <div className="ml-4">
-                          <p className="font-medium">{index + 1}. {patient.fullName}</p>
-                          <p className="text-sm text-gray-500">Last visit: {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'N/A'}</p>
+                        <div className="flex items-center space-x-2">
+                          <button 
+                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            onClick={() => handleViewPatientDetails(patient._id)}
+                          >
+                            View Records
+                          </button>
+                          <button 
+                            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                            onClick={() => handleScheduleAppointment(patient._id)}
+                          >
+                            Schedule
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                          onClick={() => handleViewPatientDetails(patient._id)}
-                        >
-                          View Records
-                        </button>
-                        <button 
-                          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                          onClick={() => handleScheduleAppointment(patient._id)}
-                        >
-                          Schedule
-                        </button>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          </div>
         </div>
       </main>
       

@@ -33,6 +33,24 @@ export async function GET(request) {
       .sort({ createdAt: -1 })
       .toArray();
 
+    // Populate doctor information for each prescription
+    const populatedPrescriptions = await Promise.all(
+      prescriptions.map(async (prescription) => {
+        const doctor = await db.collection('doctors').findOne(
+          { _id: new ObjectId(prescription.doctorId) },
+          { projection: { fullName: 1, specialization: 1 } }
+        );
+
+        return {
+          ...prescription,
+          doctor: {
+            fullName: doctor?.fullName || 'Unknown Doctor',
+            specialization: doctor?.specialization || 'General Practitioner'
+          }
+        };
+      })
+    );
+
     // Get unread messages count
     const unreadMessages = await db.collection('messages')
       .countDocuments({
@@ -61,7 +79,7 @@ export async function GET(request) {
 
     return NextResponse.json({
       appointments,
-      prescriptions,
+      prescriptions: populatedPrescriptions,
       unreadMessages,
       lastCheckup: lastCheckup ? lastCheckup.scheduledFor : null,
       nextCheckup: nextCheckup ? {

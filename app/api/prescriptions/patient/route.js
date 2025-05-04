@@ -12,24 +12,39 @@ export async function GET(req) {
     }
 
     const { db } = await connectToDatabase();
+    
+    // Get all prescriptions for the patient
     const prescriptions = await db.collection('prescriptions')
-      .find({ patientId: session.user.id })
+      .find({ 
+        patientId: new ObjectId(session.user.id),
+        status: 'active'
+      })
       .sort({ createdAt: -1 })
       .toArray();
 
     // Populate doctor information for each prescription
     const populatedPrescriptions = await Promise.all(
       prescriptions.map(async (prescription) => {
+        // Get doctor information
         const doctor = await db.collection('doctors').findOne(
-          { _id: new ObjectId(prescription.doctorId) },
-          { projection: { fullName: 1, specialization: 1 } }
+          { _id: new ObjectId(prescription.doctorId) }
+        );
+
+        // Get appointment information
+        const appointment = await db.collection('appointments').findOne(
+          { _id: new ObjectId(prescription.appointmentId) }
         );
 
         return {
           ...prescription,
           doctor: {
             fullName: doctor?.fullName || 'Unknown Doctor',
-            specialization: doctor?.specialization || 'General Practitioner'
+            specialization: doctor?.specialization || 'General Practitioner',
+            profilePicture: doctor?.profilePicture
+          },
+          appointment: {
+            date: appointment?.scheduledFor,
+            type: appointment?.type
           }
         };
       })
