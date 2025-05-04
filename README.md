@@ -1,30 +1,40 @@
 # VirtualDoc - Medical Appointment System
 
-A modern web application for managing medical appointments between patients and doctors.
+A comprehensive web application for managing medical appointments, prescriptions, and patient records between patients and doctors.
 
-## Features
+## Key Features
 
-- User authentication with email and phone number
-- Role-based access control (Patient, Doctor, Admin)
-- Secure password handling with bcrypt
-- JWT-based authentication
-- MongoDB database integration
-- Responsive UI with Tailwind CSS
+- ✅ Role-based dashboards (Patient, Doctor, Admin)
+- ✅ Comprehensive appointment management system
+- ✅ Prescription management with medication tracking
+- ✅ Medical records management
+- ✅ Secure messaging system
+- ✅ Doctor verification workflow
+- ✅ Role-based access control
+- ✅ Secure authentication with NextAuth.js
+- ✅ MongoDB integration with Prisma ORM
+- ✅ Responsive UI with Tailwind CSS
 
 ## Tech Stack
 
-- **Frontend**: Next.js, React, Tailwind CSS
-- **Backend**: Node.js, Next.js API Routes
+- **Framework**: Next.js 14
+- **UI**: React 18, Tailwind CSS
+- **Authentication**: NextAuth.js
 - **Database**: MongoDB
-- **Authentication**: JWT, bcrypt
+- **API**: Next.js API Routes
+- **State Management**: React Context
+- **Form Handling**: React Hook Form
+- **Date Handling**: Day.js
+- **File Upload**: Cloudinary Integration
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
+- Node.js (v18 or higher)
 - MongoDB Atlas account or local MongoDB instance
-- npm or yarn
+- npm (latest version)
+- Git
 
 ### Installation
 
@@ -45,8 +55,9 @@ A modern web application for managing medical appointments between patients and 
    - Create a `.env.local` file in the root directory
    - Add the following variables:
      ```
-     MONGODB_URI=your_mongodb_connection_string
-     JWT_SECRET=your_jwt_secret_key
+     DATABASE_URL=your_mongodb_connection_string
+     NEXTAUTH_SECRET=your_nextauth_secret
+     NEXTAUTH_URL=http://localhost:3000
      ```
 
 4. Start the development server:
@@ -64,47 +75,58 @@ A modern web application for managing medical appointments between patients and 
 virtualdoc/
 ├── app/                  # Next.js app directory
 │   ├── api/              # API routes
-│   ├── components/       # React components
-│   ├── login/            # Login page
-│   ├── register/         # Registration page
-│   └── ...               # Other pages
-├── Backend/              # Backend code
-│   ├── config/           # Configuration files
-│   ├── controllers/      # API controllers
-│   ├── middleware/       # Middleware functions
-│   ├── models/           # Database models
-│   └── routes/           # API route handlers
-├── public/               # Static files
-│   └── uploads/          # User uploaded files
-└── ...                   # Config files
+│   ├── dashboard/        # Role-based dashboards
+│   │   ├── admin/       # Admin dashboard
+│   │   ├── doctor/      # Doctor dashboard
+│   │   └── patient/     # Patient dashboard
+│   ├── auth/            # Authentication pages
+│   ├── components/      # Shared components
+│   └── layout/          # Layout components
+├── components/          # Shared UI components
+├── hooks/              # Custom React hooks
+├── lib/               # Utility functions
+├── middleware/        # Authentication middleware
+├── models/           # Database models
+├── public/           # Static assets
+└── scripts/          # Build and deployment scripts
 ```
 
-## Authentication
+## Authentication & Security
 
-The application supports authentication using both email and phone number:
+The application uses NextAuth.js for secure authentication:
 
-- Users can register with both email and phone number
-- Users can log in using either their email or phone number
-- JWT tokens are used for maintaining sessions
+- Multi-factor authentication support
+- Role-based access control
+- Doctor verification workflow
+- Secure session management
+- Protected routes with middleware
+- Password reset functionality
 
 ## Database Schema
 
-### User Model
+### Core Models
 
-- `fullName`: String (required)
-- `email`: String (required, unique)
-- `phoneNumber`: String (required, unique)
-- `password`: String (required, hashed)
+#### User Model
+- `email`: String (unique)
 - `role`: String (enum: 'patient', 'doctor', 'admin')
-- `specialization`: String (required for doctors)
-- `licenseNumber`: String (required for doctors)
-- `yearsOfExperience`: Number (required for doctors)
-- `dateOfBirth`: Date
-- `gender`: String (enum: 'male', 'female', 'other')
-- `address`: String
-- `profileImage`: String (path to uploaded image)
-- `isVerified`: Boolean
+- `status`: String (verification status)
 - `createdAt`: Date
+- `updatedAt`: Date
+
+#### Appointment Model
+- `patientId`: Reference to User
+- `doctorId`: Reference to Doctor
+- `date`: Date
+- `time`: String
+- `status`: String
+- `notes`: String
+
+#### Prescription Model
+- `patientId`: Reference to User
+- `doctorId`: Reference to Doctor
+- `appointmentId`: Reference to Appointment
+- `medications`: Array of medication objects
+- `status`: String (enum: 'active', 'completed', 'cancelled')
 
 ## License
 
