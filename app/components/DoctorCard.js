@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { Star, Clock, Calendar, MapPin, CheckCircle2, User } from 'lucide-react';
+import { Phone, Clock, Calendar, MapPin, CheckCircle2, User } from 'lucide-react';
 
 const DoctorCard = ({ doctor, onBookAppointment, darkMode }) => {
   return (
@@ -62,25 +62,11 @@ const DoctorCard = ({ doctor, onBookAppointment, darkMode }) => {
           </span>
         </div>
 
-        {/* Rating */}
-        <div className="flex items-center justify-center mb-4">
-          <div className="flex">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`h-4 w-4 ${
-                  i < Math.floor(doctor.rating || 0)
-                    ? 'text-yellow-400'
-                    : darkMode
-                    ? 'text-gray-600'
-                    : 'text-gray-300'
-                }`}
-                fill={i < Math.floor(doctor.rating || 0) ? 'currentColor' : 'none'}
-              />
-            ))}
-          </div>
-          <span className={`text-sm ml-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            ({doctor.reviewCount || 0} reviews)
+        {/* Phone Number */}
+        <div className="flex items-center justify-center mb-3">
+          <Phone className={`h-4 w-4 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+          <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            {doctor.phoneNumber || 'Phone number not available'}
           </span>
         </div>
 

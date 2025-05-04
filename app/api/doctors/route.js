@@ -3,7 +3,9 @@ import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET() {
   try {
+    console.log('Attempting to connect to database...');
     const { db } = await connectToDatabase();
+    console.log('Database connection successful');
     
     // First, let's check all doctors to see their statuses
     const allDoctors = await db.collection('users')
@@ -31,7 +33,8 @@ export async function GET() {
         rating: 1,
         reviewCount: 1,
         yearsOfExperience: 1,
-        status: 1
+        status: 1,
+        phoneNumber: 1
       })
       .toArray();
 

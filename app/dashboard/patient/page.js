@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Settings, LogOut, User, Search, Sun, Moon, Stethoscope, Clock, Download, Upload, Star } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, MessageSquare, Video, Settings, LogOut, User, Search, Sun, Moon, Stethoscope, Clock, Download, Upload, Star, CheckCircle } from 'lucide-react';
 import { Menu as HMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import Image from 'next/image';
@@ -236,6 +236,21 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
     }
   };
 
+  const handleViewPrescriptions = (appointmentId) => {
+    // Find prescriptions associated with this appointment
+    const appointmentPrescriptions = dashboardData.prescriptions.filter(
+      prescription => prescription.appointmentId === appointmentId
+    );
+    
+    if (appointmentPrescriptions.length > 0) {
+      // Scroll to prescriptions section
+      document.getElementById('prescriptions')?.scrollIntoView({ behavior: 'smooth' });
+      toast.success(`Found ${appointmentPrescriptions.length} prescription(s) for this appointment`);
+    } else {
+      toast.info('No prescriptions found for this appointment');
+    }
+  };
+
   const handleDownloadAllPrescriptions = async (prescriptions) => {
     try {
       // Create text content for all prescriptions
@@ -319,6 +334,7 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
         fetchPrescriptions();
         fetchPatientProfile();
         fetchDashboardData();
+        fetchDoctors();
       } else {
         console.error('No user ID found in session:', session.user);
         toast.error('Session error: Please login again');
@@ -669,7 +685,13 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-gray-500 py-4">No pending appointments</p>
+                  <div className={`p-8 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <Calendar className={`h-12 w-12 mx-auto mb-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <h4 className="text-lg font-medium mb-2">No Pending Appointments</h4>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      You don't have any appointments waiting for doctor approval.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -748,7 +770,79 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-gray-500 py-4">No upcoming appointments</p>
+                  <div className={`p-8 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <Calendar className={`h-12 w-12 mx-auto mb-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <h4 className="text-lg font-medium mb-2">No Upcoming Appointments</h4>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      You don't have any scheduled appointments at the moment.
+                      <br />
+                      <span className="text-green-500 font-medium">Find a doctor</span> to book your first appointment.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Completed Appointments */}
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold mb-4">Completed Appointments</h3>
+              <div className="space-y-4">
+                {appointments.filter(appointment => appointment.status === 'completed').length > 0 ? (
+                  appointments.filter(appointment => appointment.status === 'completed').map((appointment) => (
+                    <div key={appointment._id} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <h4 className="text-lg font-medium">{appointment.doctorId?.fullName || 'Unknown Doctor'}</h4>
+                          <p className="text-sm text-gray-500">{appointment.doctorId?.specialization || 'No specialty'}</p>
+                          <div className="mt-2">
+                            <span className="text-sm font-medium">Consultation Reason: </span>
+                            <span className="text-sm text-gray-500">{appointment.reason}</span>
+                          </div>
+                          {appointment.notes && (
+                            <div className="mt-2">
+                              <span className="text-sm font-medium">Additional Notes: </span>
+                              <span className="text-sm text-gray-500">{appointment.notes}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right mt-4 md:mt-0">
+                          <p className="text-lg font-medium">
+                            {formatDate(appointment.scheduledFor)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {formatTime(appointment.scheduledFor)}
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            Completed: {appointment.completedAt ? formatDate(appointment.completedAt) : 'Unknown'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2 mt-4">
+                        {appointment.prescriptions?.length > 0 ? (
+                          <button
+                            onClick={() => handleViewPrescriptions(appointment._id)}
+                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            View Prescriptions
+                          </button>
+                        ) : (
+                          <div className="flex-1 px-4 py-2 bg-gray-300 text-gray-600 rounded flex items-center justify-center">
+                            <FileText className="h-4 w-4 mr-2" />
+                            No Prescriptions
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className={`p-8 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <CheckCircle className={`h-12 w-12 mx-auto mb-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <h4 className="text-lg font-medium mb-2">No Completed Appointments</h4>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      You don't have any completed appointments yet.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -772,7 +866,7 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {dashboardData.prescriptions.length > 0 ? (
+              {dashboardData.prescriptions && dashboardData.prescriptions.length > 0 ? (
                 dashboardData.prescriptions.map((prescription) => (
                   <div key={prescription._id} className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'} transition-colors duration-200`}>
                     {/* Doctor Information Header */}
@@ -865,18 +959,16 @@ STATUS: ${prescription.status === 'active' ? 'Active' : 'Pending Refill'}
                   </div>
                 ))
               ) : (
-                <div className="col-span-full text-center py-8">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${darkMode ? 'bg-gray-600' : 'bg-gray-100'} mb-4`}>
-                    <FileText className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`} size={32} />
+                <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                  <div className={`p-8 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <FileText className={`h-12 w-12 mx-auto mb-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <h4 className="text-lg font-medium mb-2">No Prescriptions</h4>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      You don't have any prescriptions yet. Prescriptions will appear here after your doctor creates them.
+                    </p>
                   </div>
-                  <p className={`text-lg font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    No active prescriptions
-                  </p>
-                  <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                    Your prescriptions will appear here when prescribed by your doctor
-                  </p>
                 </div>
-              )}
+              )}  
             </div>
           </div>
         </section>

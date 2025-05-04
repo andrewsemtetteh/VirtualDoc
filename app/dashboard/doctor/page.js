@@ -739,7 +739,27 @@ export default function DoctorDashboard() {
                         </button>
                       </div>
                     </div>
-                  ))}
+                  )) || (
+                  <div className="text-center py-12">
+                    <Users className={`mx-auto h-12 w-12 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+                    <h3 className={`mt-2 text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                      No patients found
+                    </h3>
+                    <p className={`mt-1 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Start by scheduling appointments with your patients
+                    </p>
+                    <button
+                      onClick={() => setActiveSection('appointments')}
+                      className={`mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md ${
+                        darkMode 
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'bg-blue-500 text-white hover:bg-blue-600'
+                      }`}
+                    >
+                      Go to Appointments
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
