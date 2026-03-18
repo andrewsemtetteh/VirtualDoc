@@ -4,8 +4,10 @@ const nextConfig = {
   // Add this to help prevent hydration issues with date inputs
   experimental: {
     // This helps with form handling and hydration
-    serverActions: true,
+    serverActions: {
+      allowedOrigins: ["localhost:3000"]
+    },
   }
 }
 
-module.exports = nextConfig 
+module.exports = nextConfig
